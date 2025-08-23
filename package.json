@@ -1,5 +1,5 @@
 {
-  "name": "react-native-course",
+  "name": "habit-tracker",
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
@@ -22,6 +22,7 @@
     "expo-font": "~13.3.1",
     "expo-haptics": "~14.1.4",
     "expo-image": "~2.1.7",
+    "expo-image-picker": "~16.0.3",
     "expo-linking": "~7.1.5",
     "expo-router": "~5.0.6",
     "expo-splash-screen": "~0.30.8",
@@ -44,7 +45,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@tsconfig/react-native": "^3.0.6",
+    "@types/jest": "^30.0.0",
     "@types/react": "~19.0.10",
+    "@types/react-native": "^0.72.8",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
     "typescript": "~5.8.3"

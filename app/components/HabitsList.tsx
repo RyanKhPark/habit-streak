@@ -1,4 +1,4 @@
-import { Habit } from "@/types/database.type";
+import { Habit, HabitCompletion } from "@/types/database.type";
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { Text } from "react-native-paper";
@@ -7,6 +7,7 @@ import { SwipeableHabit } from "./SwipeableHabit";
 interface HabitsListProps {
   habits: Habit[];
   completedHabits: string[];
+  completions: HabitCompletion[];
   onDeleteHabit: (id: string) => void;
   onCompleteHabit: (id: string) => void;
 }
@@ -14,9 +15,16 @@ interface HabitsListProps {
 export function HabitsList({
   habits,
   completedHabits,
+  completions,
   onDeleteHabit,
   onCompleteHabit,
 }: HabitsListProps) {
+  const getLastCompletion = (habitId: string) => {
+    return completions
+      .filter(c => c.habit_id === habitId)
+      .sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())[0];
+  };
+
   if (habits.length === 0) {
     return (
       <View style={styles.emptyState}>
@@ -34,6 +42,7 @@ export function HabitsList({
           key={habit.$id}
           habit={habit}
           isCompleted={completedHabits.includes(habit.$id)}
+          lastCompletion={getLastCompletion(habit.$id)}
           onDelete={onDeleteHabit}
           onComplete={onCompleteHabit}
         />

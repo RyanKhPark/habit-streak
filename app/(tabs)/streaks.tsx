@@ -159,21 +159,19 @@ export default function StreaksScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title} variant="headlineSmall">
-        {" "}
         Habit Streaks
       </Text>
 
       {rankedHabits.length > 0 && (
         <View style={styles.rankingContainer}>
-          {" "}
-          <Text style={styles.rankingTitle}> 🏅 Top Streaks</Text>{" "}
+          <Text style={styles.rankingTitle}>🏅 Top Streaks</Text>
           {rankedHabits.slice(0, 3).map((item, key) => (
             <View key={key} style={styles.rankingRow}>
               <View style={[styles.rankingBadge, badgeStyles[key]]}>
-                <Text style={styles.rankingBadgeText}> {key + 1} </Text>
+                <Text style={styles.rankingBadgeText}>{key + 1}</Text>
               </View>
-              <Text style={styles.rankingHabit}> {item.habit.title}</Text>
-              <Text style={styles.rankingStreak}> {item.bestStreak}</Text>
+              <Text style={styles.rankingHabit}>{item.habit.title}</Text>
+              <Text style={styles.rankingStreak}>{item.bestStreak}</Text>
             </View>
           ))}
         </View>
@@ -181,7 +179,7 @@ export default function StreaksScreen() {
 
       {habits.length === 0 ? (
         <View>
-          <Text> No Habits yet. Add your first Habit!</Text>
+          <Text>No Habits yet. Add your first Habit!</Text>
         </View>
       ) : (
         <ScrollView
@@ -195,25 +193,21 @@ export default function StreaksScreen() {
             >
               <Card.Content>
                 <Text variant="titleMedium" style={styles.habitTitle}>
-                  {" "}
                   {habit.title}
                 </Text>
-                <Text style={styles.habitDescription}>
-                  {" "}
-                  {habit.description}
-                </Text>
+                <Text style={styles.habitDescription}>{habit.description}</Text>
                 <View style={styles.statsRow}>
                   <View style={styles.statBadge}>
-                    <Text style={styles.statBadgeText}> 🔥 {streak}</Text>
-                    <Text style={styles.statLabel}> Current</Text>
+                    <Text style={styles.statBadgeText}>🔥 {streak}</Text>
+                    <Text style={styles.statLabel}>Current</Text>
                   </View>
                   <View style={styles.statBadgeGold}>
-                    <Text style={styles.statBadgeText}> 🏆 {bestStreak}</Text>
-                    <Text style={styles.statLabel}> Best</Text>
+                    <Text style={styles.statBadgeText}>🏆 {bestStreak}</Text>
+                    <Text style={styles.statLabel}>Best</Text>
                   </View>
                   <View style={styles.statBadgeGreen}>
-                    <Text style={styles.statBadgeText}> ✅ {total}</Text>
-                    <Text style={styles.statLabel}> Total</Text>
+                    <Text style={styles.statBadgeText}>✅ {total}</Text>
+                    <Text style={styles.statLabel}>Total</Text>
                   </View>
                 </View>
               </Card.Content>

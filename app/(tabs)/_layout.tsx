@@ -45,12 +45,38 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="browse-habits"
+        options={{
+          title: "Browse",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="compass"
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="add-habit"
         options={{
           title: "Add Habit",
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
               name="plus-circle"
+              size={size}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name="account-circle"
               size={size}
               color={color}
             />

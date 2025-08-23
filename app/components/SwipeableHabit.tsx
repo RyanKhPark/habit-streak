@@ -1,4 +1,4 @@
-import { Habit } from "@/types/database.type";
+import { Habit, HabitCompletion } from "@/types/database.type";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRef } from "react";
 import { StyleSheet, View } from "react-native";
@@ -11,6 +11,7 @@ interface SwipeableHabitProps {
   isCompleted: boolean;
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
+  lastCompletion?: HabitCompletion;
 }
 
 export function SwipeableHabit({
@@ -18,6 +19,7 @@ export function SwipeableHabit({
   isCompleted,
   onDelete,
   onComplete,
+  lastCompletion,
 }: SwipeableHabitProps) {
   const swipeableRef = useRef<Swipeable | null>(null);
 
@@ -61,7 +63,7 @@ export function SwipeableHabit({
         swipeableRef.current?.close();
       }}
     >
-      <HabitCard habit={habit} isCompleted={isCompleted} />
+      <HabitCard habit={habit} isCompleted={isCompleted} lastCompletion={lastCompletion} />
     </Swipeable>
   );
 }

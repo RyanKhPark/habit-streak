@@ -13,6 +13,8 @@ export const HABITS_COLLECTION_ID =
   process.env.EXPO_PUBLIC_HABITS_COLLECTION_ID!;
 export const COMPLETIONS_COLLECTION_ID =
   process.env.EXPO_PUBLIC_COMPLETIONS_COLLECTION_ID!;
+export const PARTICIPANTS_COLLECTION_ID =
+  process.env.EXPO_PUBLIC_PARTICIPANTS_COLLECTION_ID!;
 export interface RealtimeResponse {
   events: string[];
   payload: any;
