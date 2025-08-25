@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, FlatList } from 'react-native';
+import { StyleSheet, View, ScrollView } from 'react-native';
 import { 
   Card, 
   Text, 
   Avatar, 
   Chip,
-  ActivityIndicator 
+  ActivityIndicator,
+  DataTable,
+  Modal,
+  Portal,
+  Button,
+  IconButton
 } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
@@ -13,15 +18,27 @@ import { databases, DATABASE_ID, COMPLETIONS_COLLECTION_ID, HABITS_COLLECTION_ID
 import { Query } from 'react-native-appwrite';
 import { Habit, HabitCompletion, UserRecord } from '@/types/database.type';
 
+interface TableData {
+  dates: string[];
+  users: {
+    user_id: string;
+    user_name: string;
+    completions: { [date: string]: HabitCompletion | null };
+    todayCompletionTime?: string;
+  }[];
+}
+
 export default function HabitRecordsScreen() {
   const { habitId } = useLocalSearchParams<{ habitId: string }>();
   const { user } = useAuth();
   const router = useRouter();
   
   const [habit, setHabit] = useState<Habit | null>(null);
-  const [userRecords, setUserRecords] = useState<UserRecord[]>([]);
+  const [tableData, setTableData] = useState<TableData>({ dates: [], users: [] });
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'all'>('week');
+  const [selectedUser, setSelectedUser] = useState<TableData['users'][0] | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     if (habitId) {
@@ -41,7 +58,7 @@ export default function HabitRecordsScreen() {
       );
       setHabit(habitResponse as Habit);
 
-      // Calculate date filter
+      // Calculate date filter and generate date range
       const now = new Date();
       let startDate = new Date();
       
@@ -56,8 +73,19 @@ export default function HabitRecordsScreen() {
           startDate.setMonth(now.getMonth() - 1);
           break;
         case 'all':
-          startDate = new Date('2020-01-01'); // Far back date
+          startDate = new Date('2020-01-01');
           break;
+      }
+
+      // Generate array of dates for table headers
+      const dates: string[] = [];
+      const currentDate = new Date(startDate);
+      const endDate = new Date(now);
+      endDate.setHours(23, 59, 59, 999);
+
+      while (currentDate <= endDate) {
+        dates.push(currentDate.toISOString().split('T')[0]);
+        currentDate.setDate(currentDate.getDate() + 1);
       }
 
       // Fetch all completions for this habit within time filter
@@ -68,66 +96,75 @@ export default function HabitRecordsScreen() {
           Query.equal('habit_id', habitId!),
           Query.greaterThanEqual('completed_at', startDate.toISOString()),
           Query.orderDesc('completed_at'),
-          Query.limit(1000) // Adjust as needed
+          Query.limit(1000)
         ]
       );
 
       const completions = completionsResponse.documents as HabitCompletion[];
       
-      // Group completions by user and calculate stats
-      const userRecordsMap = new Map<string, UserRecord>();
+      // Group completions by user and date
+      const userCompletionsMap = new Map<string, {
+        user_name: string;
+        completions: { [date: string]: HabitCompletion | null };
+        todayCompletionTime?: string;
+      }>();
       
       for (const completion of completions) {
-        if (!userRecordsMap.has(completion.user_id)) {
-          // For demo purposes, we'll create a simple user name
-          // In production, you'd fetch actual user details
+        const completionDate = completion.completed_at.split('T')[0];
+        const todayDate = now.toISOString().split('T')[0];
+        
+        if (!userCompletionsMap.has(completion.user_id)) {
           const userName = completion.user_id === user?.$id 
             ? (user?.name || 'You') 
             : `User ${completion.user_id.slice(-4)}`;
           
-          userRecordsMap.set(completion.user_id, {
-            user_id: completion.user_id,
+          userCompletionsMap.set(completion.user_id, {
             user_name: userName,
-            completions: [],
-            totalCount: 0,
-            rank: 0
+            completions: {},
+            todayCompletionTime: undefined
           });
         }
         
-        const userRecord = userRecordsMap.get(completion.user_id)!;
-        userRecord.completions.push(completion);
-        userRecord.totalCount++;
+        const userRecord = userCompletionsMap.get(completion.user_id)!;
+        
+        // Store completion for the date (only keep the most recent one per date)
+        if (!userRecord.completions[completionDate]) {
+          userRecord.completions[completionDate] = completion;
+        }
+        
+        // Track today's completion time for sorting
+        if (completionDate === todayDate) {
+          userRecord.todayCompletionTime = completion.completed_at;
+        }
       }
 
-      // Calculate averages and rankings
-      const records = Array.from(userRecordsMap.values()).map(record => {
-        const values = record.completions
-          .map(c => parseFloat(c.value || '0'))
-          .filter(v => !isNaN(v));
-        
-        record.averageValue = values.length > 0 
-          ? values.reduce((a, b) => a + b, 0) / values.length 
-          : 0;
-        
-        record.lastCompletion = record.completions[0]; // Most recent (already sorted)
-        
-        return record;
-      });
+      // Convert to array and sort users
+      const users = Array.from(userCompletionsMap.entries()).map(([user_id, data]) => ({
+        user_id,
+        user_name: data.user_name,
+        completions: data.completions,
+        todayCompletionTime: data.todayCompletionTime
+      }));
 
-      // Sort by total count (or average value for numeric habits)
-      records.sort((a, b) => {
-        if (habitResponse.unit_type === 'number') {
-          return (b.averageValue || 0) - (a.averageValue || 0);
+      // Sort users: those who completed today first (by completion time), then others
+      users.sort((a, b) => {
+        const aHasToday = !!a.todayCompletionTime;
+        const bHasToday = !!b.todayCompletionTime;
+        
+        if (aHasToday && bHasToday) {
+          // Both completed today, sort by completion time (earlier first)
+          return a.todayCompletionTime!.localeCompare(b.todayCompletionTime!);
+        } else if (aHasToday) {
+          return -1; // a goes first
+        } else if (bHasToday) {
+          return 1; // b goes first
+        } else {
+          // Neither completed today, sort alphabetically by name
+          return a.user_name.localeCompare(b.user_name);
         }
-        return b.totalCount - a.totalCount;
       });
 
-      // Assign ranks
-      records.forEach((record, index) => {
-        record.rank = index + 1;
-      });
-
-      setUserRecords(records);
+      setTableData({ dates: dates.reverse(), users }); // Reverse dates to show most recent first
     } catch (error) {
       console.error('Error fetching habit records:', error);
     } finally {
@@ -135,61 +172,159 @@ export default function HabitRecordsScreen() {
     }
   };
 
-  const formatValue = (completion: HabitCompletion) => {
-    return completion.display_value || completion.value || '-';
+  const formatValue = (completion: HabitCompletion | null) => {
+    if (!completion) return '';
+    return completion.display_value || completion.value || '✓';
   };
 
-  const getCurrentUserRank = () => {
-    const currentUserRecord = userRecords.find(r => r.user_id === user?.$id);
-    return currentUserRecord?.rank || 'N/A';
+  const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return `${date.getMonth() + 1}/${date.getDate()}`;
   };
 
-  const renderUserRecord = ({ item }: { item: UserRecord }) => {
-    const isCurrentUser = item.user_id === user?.$id;
+  const handleUserPress = (userData: TableData['users'][0]) => {
+    setSelectedUser(userData);
+    setModalVisible(true);
+  };
+
+  const LineChart = ({ dates, userData, habit, formatValue, formatDate }) => {
+    const chartWidth = Math.max(dates.length * 50, 300);
+    const chartHeight = 120;
+    const padding = { top: 20, right: 30, bottom: 40, left: 30 };
+    const graphWidth = chartWidth - padding.left - padding.right;
+    const graphHeight = chartHeight - padding.top - padding.bottom;
+
+    // Prepare data points
+    const dataPoints = dates.map((date, index) => {
+      const completion = userData.completions[date];
+      const value = completion ? 
+        (habit?.unit_type === 'number' ? parseFloat(completion.value || '0') : 1) : 0;
+      return { date, value, hasCompletion: !!completion, index };
+    });
+
+    // Calculate max value for scaling
+    const allValues = tableData.users.flatMap(user => 
+      Object.values(user.completions)
+        .filter(c => c)
+        .map(c => habit?.unit_type === 'number' ? parseFloat(c!.value || '0') : 1)
+    );
+    const maxValue = Math.max(...allValues, 1);
+
+    // Generate SVG path for the line
+    let pathData = '';
+    const validPoints = dataPoints.filter(point => point.hasCompletion);
     
+    if (validPoints.length > 0) {
+      validPoints.forEach((point, index) => {
+        const x = padding.left + (point.index / (dates.length - 1)) * graphWidth;
+        const y = padding.top + graphHeight - (point.value / maxValue) * graphHeight;
+        
+        if (index === 0) {
+          pathData += `M ${x} ${y}`;
+        } else {
+          pathData += ` L ${x} ${y}`;
+        }
+      });
+    }
+
     return (
-      <Card style={[styles.recordCard, isCurrentUser && styles.currentUserCard]}>
-        <Card.Content style={styles.recordContent}>
-          <View style={styles.userInfo}>
-            <View style={styles.rankBadge}>
-              <Text style={styles.rankText}>#{item.rank}</Text>
-            </View>
-            <Avatar.Text 
-              size={40} 
-              label={item.user_name.charAt(0).toUpperCase()}
-              style={styles.avatar}
+      <View style={[styles.svgContainer, { width: chartWidth, height: chartHeight }]}>
+        {/* Grid lines and axes would go here if using SVG */}
+        <View style={styles.chartGrid}>
+          {/* Y-axis grid lines */}
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio, index) => (
+            <View 
+              key={index}
+              style={[
+                styles.gridLine, 
+                { 
+                  top: padding.top + graphHeight * ratio,
+                  left: padding.left,
+                  width: graphWidth 
+                }
+              ]} 
             />
-            <View style={styles.userDetails}>
-              <Text variant="titleMedium" style={styles.userName}>
-                {item.user_name} {isCurrentUser && '(You)'}
-              </Text>
-              <Text variant="bodySmall" style={styles.userStats}>
-                {item.totalCount} completions
-              </Text>
-            </View>
-          </View>
+          ))}
+        </View>
+        
+        {/* Data points */}
+        {dataPoints.map((point, index) => {
+          const x = padding.left + (index / (dates.length - 1)) * graphWidth;
+          const y = padding.top + graphHeight - (point.value / maxValue) * graphHeight;
           
-          <View style={styles.recordStats}>
-            {habit?.unit_type === 'number' && (
-              <View style={styles.statItem}>
-                <Text variant="bodySmall" style={styles.statLabel}>Average</Text>
-                <Text variant="titleMedium" style={styles.statValue}>
-                  {item.averageValue?.toFixed(1) || '0'} {habit.unit_label}
+          return (
+            <View key={point.date}>
+              {/* Point */}
+              {point.hasCompletion && (
+                <View
+                  style={[
+                    styles.dataPoint,
+                    {
+                      left: x - 4,
+                      top: y - 4,
+                    }
+                  ]}
+                />
+              )}
+              
+              {/* Date label */}
+              <Text
+                style={[
+                  styles.dateLabel,
+                  {
+                    left: x - 20,
+                    top: chartHeight - 30,
+                  }
+                ]}
+              >
+                {formatDate(point.date)}
+              </Text>
+              
+              {/* Value label */}
+              {point.hasCompletion && (
+                <Text
+                  style={[
+                    styles.valueLabel,
+                    {
+                      left: x - 15,
+                      top: y - 20,
+                    }
+                  ]}
+                >
+                  {formatValue(userData.completions[point.date])}
                 </Text>
-              </View>
-            )}
-            
-            {item.lastCompletion && (
-              <View style={styles.statItem}>
-                <Text variant="bodySmall" style={styles.statLabel}>Last</Text>
-                <Text variant="titleMedium" style={styles.statValue}>
-                  {formatValue(item.lastCompletion)}
-                </Text>
-              </View>
-            )}
-          </View>
-        </Card.Content>
-      </Card>
+              )}
+            </View>
+          );
+        })}
+        
+        {/* Connect points with lines */}
+        {validPoints.length > 1 && validPoints.slice(0, -1).map((point, index) => {
+          const nextPoint = validPoints[index + 1];
+          const x1 = padding.left + (point.index / (dates.length - 1)) * graphWidth;
+          const y1 = padding.top + graphHeight - (point.value / maxValue) * graphHeight;
+          const x2 = padding.left + (nextPoint.index / (dates.length - 1)) * graphWidth;
+          const y2 = padding.top + graphHeight - (nextPoint.value / maxValue) * graphHeight;
+          
+          const lineLength = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
+          const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+          
+          return (
+            <View
+              key={`line-${point.date}-${nextPoint.date}`}
+              style={[
+                styles.connectionLine,
+                {
+                  left: x1,
+                  top: y1,
+                  width: lineLength,
+                  transform: [{ rotate: `${angle}deg` }],
+                }
+              ]}
+            />
+          );
+        })}
+      </View>
     );
   };
 
@@ -213,7 +348,7 @@ export default function HabitRecordsScreen() {
             {habit?.description}
           </Text>
           <Text variant="bodySmall" style={styles.sharedInfo}>
-            🌟 Shared with {userRecords.length} participants
+            🌟 Shared with {tableData.users.length} participants
           </Text>
           
           <View style={styles.filterContainer}>
@@ -228,22 +363,146 @@ export default function HabitRecordsScreen() {
               </Chip>
             ))}
           </View>
-          
-          <View style={styles.yourRankContainer}>
-            <Text variant="titleMedium" style={styles.yourRankText}>
-              Your Rank: #{getCurrentUserRank()}
-            </Text>
-          </View>
         </Card.Content>
       </Card>
 
-      <FlatList
-        data={userRecords}
-        renderItem={renderUserRecord}
-        keyExtractor={(item) => item.user_id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+      <Card style={styles.tableCard}>
+        <Card.Content>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <DataTable style={styles.table}>
+              <DataTable.Header>
+                <DataTable.Title style={styles.userColumn}>
+                  <Text variant="titleSmall" style={styles.headerText}>Member</Text>
+                </DataTable.Title>
+                {tableData.dates.map((date) => (
+                  <DataTable.Title key={date} style={styles.dateColumn}>
+                    <Text variant="bodySmall" style={styles.headerText}>
+                      {formatDate(date)}
+                    </Text>
+                  </DataTable.Title>
+                ))}
+              </DataTable.Header>
+
+              {tableData.users.map((userData) => {
+                const isCurrentUser = userData.user_id === user?.$id;
+                return (
+                  <DataTable.Row 
+                    key={userData.user_id} 
+                    style={[styles.tableRow, isCurrentUser && styles.currentUserRow]}
+                    onPress={() => handleUserPress(userData)}
+                  >
+                    <DataTable.Cell style={styles.userColumn}>
+                      <View style={styles.userCell}>
+                        <Avatar.Text 
+                          size={24} 
+                          label={userData.user_name.charAt(0).toUpperCase()}
+                          style={styles.smallAvatar}
+                        />
+                        <Text variant="bodyMedium" style={styles.userNameText}>
+                          {userData.user_name}{isCurrentUser && ' (You)'}
+                        </Text>
+                      </View>
+                    </DataTable.Cell>
+                    {tableData.dates.map((date) => {
+                      const completion = userData.completions[date];
+                      const isToday = date === new Date().toISOString().split('T')[0];
+                      const hasCompletedToday = isToday && completion;
+                      
+                      return (
+                        <DataTable.Cell key={date} style={styles.dateColumn}>
+                          <View style={styles.cellContainer}>
+                            <Text variant="bodySmall" style={styles.cellValue}>
+                              {formatValue(completion)}
+                            </Text>
+                            {hasCompletedToday && (
+                              <View style={styles.todayDot} />
+                            )}
+                          </View>
+                        </DataTable.Cell>
+                      );
+                    })}
+                  </DataTable.Row>
+                );
+              })}
+            </DataTable>
+          </ScrollView>
+        </Card.Content>
+      </Card>
+
+      <Portal>
+        <Modal
+          visible={modalVisible}
+          onDismiss={() => setModalVisible(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <Card style={styles.modalCard}>
+            <Card.Content>
+              <View style={styles.modalHeader}>
+                <Text variant="headlineSmall" style={styles.modalTitle}>
+                  {selectedUser?.user_name}'s Progress
+                </Text>
+                <IconButton
+                  icon="close"
+                  size={24}
+                  onPress={() => setModalVisible(false)}
+                />
+              </View>
+              
+              {selectedUser && (
+                <View style={styles.progressContainer}>
+                  <Text variant="titleMedium" style={styles.progressTitle}>
+                    Recent Activity
+                  </Text>
+                  
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.lineChartContainer}>
+                      {selectedUser && (
+                        <LineChart 
+                          dates={tableData.dates.slice().reverse()}
+                          userData={selectedUser}
+                          habit={habit}
+                          formatValue={formatValue}
+                          formatDate={formatDate}
+                        />
+                      )}
+                    </View>
+                  </ScrollView>
+                  
+                  <View style={styles.statsContainer}>
+                    <View style={styles.statBox}>
+                      <Text variant="titleMedium">
+                        {Object.keys(selectedUser.completions).length}
+                      </Text>
+                      <Text variant="bodySmall" style={styles.statLabel}>
+                        Total Days
+                      </Text>
+                    </View>
+                    
+                    {habit?.unit_type === 'number' && (
+                      <View style={styles.statBox}>
+                        <Text variant="titleMedium">
+                          {(Object.values(selectedUser.completions)
+                            .filter(c => c)
+                            .reduce((sum, c) => sum + parseFloat(c!.value || '0'), 0) / 
+                            Object.keys(selectedUser.completions).length || 0
+                          ).toFixed(1)}
+                        </Text>
+                        <Text variant="bodySmall" style={styles.statLabel}>
+                          Average {habit.unit_label}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+              
+              <Button mode="contained" onPress={() => setModalVisible(false)} style={styles.closeButton}>
+                Close
+              </Button>
+            </Card.Content>
+          </Card>
+        </Modal>
+      </Portal>
     </View>
   );
 }
@@ -284,75 +543,169 @@ const styles = StyleSheet.create({
   filterChip: {
     minWidth: 60,
   },
-  yourRankContainer: {
-    alignItems: 'center',
-  },
-  yourRankText: {
-    fontWeight: 'bold',
-    color: '#7c4dff',
-  },
   sharedInfo: {
     textAlign: 'center',
     color: '#7c4dff',
     marginBottom: 12,
     fontWeight: '500',
   },
-  listContainer: {
-    padding: 16,
-    paddingTop: 8,
+  tableCard: {
+    margin: 16,
+    marginTop: 8,
   },
-  recordCard: {
-    marginBottom: 12,
+  table: {
+    minWidth: 600,
   },
-  currentUserCard: {
-    borderWidth: 2,
-    borderColor: '#7c4dff',
+  userColumn: {
+    flex: 2,
+    minWidth: 150,
   },
-  recordContent: {
+  dateColumn: {
+    flex: 1,
+    minWidth: 60,
+    justifyContent: 'center',
+  },
+  tableRow: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  currentUserRow: {
+    backgroundColor: '#f3e5f5',
+  },
+  headerText: {
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  userCell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  smallAvatar: {
+    marginRight: 8,
+  },
+  userNameText: {
+    flex: 1,
+    fontWeight: '500',
+  },
+  cellContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+  },
+  cellValue: {
+    textAlign: 'center',
+    fontWeight: '500',
+    color: '#333',
+  },
+  todayDot: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4caf50',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 20,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 400,
+    maxHeight: '80%',
+  },
+  modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 16,
   },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  modalTitle: {
     flex: 1,
-  },
-  rankBadge: {
-    backgroundColor: '#7c4dff',
-    borderRadius: 16,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    marginRight: 12,
-  },
-  rankText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  avatar: {
-    marginRight: 12,
-  },
-  userDetails: {
-    flex: 1,
-  },
-  userName: {
     fontWeight: 'bold',
   },
-  userStats: {
+  progressContainer: {
+    marginBottom: 20,
+  },
+  progressTitle: {
+    marginBottom: 16,
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  lineChartContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 10,
+    minHeight: 180,
+  },
+  svgContainer: {
+    position: 'relative',
+    backgroundColor: '#f9f9f9',
+    borderRadius: 8,
+    margin: 10,
+  },
+  chartGrid: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  gridLine: {
+    position: 'absolute',
+    height: 1,
+    backgroundColor: '#e0e0e0',
+  },
+  dataPoint: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4caf50',
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  connectionLine: {
+    position: 'absolute',
+    height: 2,
+    backgroundColor: '#4caf50',
+    transformOrigin: '0 50%',
+  },
+  dateLabel: {
+    position: 'absolute',
+    fontSize: 10,
     color: '#666',
+    textAlign: 'center',
+    width: 40,
   },
-  recordStats: {
-    alignItems: 'flex-end',
+  valueLabel: {
+    position: 'absolute',
+    fontSize: 10,
+    color: '#4caf50',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    width: 30,
   },
-  statItem: {
-    alignItems: 'flex-end',
-    marginBottom: 4,
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 20,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  statBox: {
+    alignItems: 'center',
   },
   statLabel: {
     color: '#666',
+    marginTop: 4,
   },
-  statValue: {
-    fontWeight: 'bold',
+  closeButton: {
+    marginTop: 16,
   },
 });
