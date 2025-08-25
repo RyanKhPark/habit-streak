@@ -5,18 +5,19 @@ import {
   useHabits,
   useTodayCompletions,
 } from "@/lib/queries";
+import { Habit } from "@/types/database.type";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Button, Text } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { HabitsList } from "../components/HabitsList";
 import { RecordInputModal } from "../components/RecordInputModal";
-import { useState } from "react";
-import { useRouter } from "expo-router";
-import { Habit } from "@/types/database.type";
 
 export default function Index() {
   const { signOut, user } = useAuth();
   const router = useRouter();
-  
+
   const [recordModalVisible, setRecordModalVisible] = useState(false);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
 
@@ -35,9 +36,13 @@ export default function Index() {
     }
   };
 
-  const handleCompleteHabit = async (id: string, value?: string, displayValue?: string) => {
+  const handleCompleteHabit = async (
+    id: string,
+    value?: string,
+    displayValue?: string
+  ) => {
     if (!user || completedHabits?.includes(id)) return;
-    
+
     const habit = habits?.find((h) => h.$id === id);
     if (!habit) return;
 
@@ -55,7 +60,7 @@ export default function Index() {
         value,
         displayValue,
       });
-      
+
       // Navigate to records screen after completion
       router.push(`/habit-records/${id}`);
     } catch (error) {
@@ -63,7 +68,11 @@ export default function Index() {
     }
   };
 
-  const handleModalSubmit = async (habitId: string, value?: string, displayValue?: string) => {
+  const handleModalSubmit = async (
+    habitId: string,
+    value?: string,
+    displayValue?: string
+  ) => {
     try {
       if (!user) return;
 
@@ -73,7 +82,7 @@ export default function Index() {
         value,
         displayValue,
       });
-      
+
       // Navigate to records screen after successful completion
       router.push(`/habit-records/${habitId}`);
     } catch (error) {
@@ -82,10 +91,10 @@ export default function Index() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text variant="headlineSmall" style={styles.title}>
-          Today&apos;s Habits
+          My List
         </Text>
         <Button mode="text" onPress={signOut} icon={"logout"}>
           Sign Out
@@ -106,15 +115,15 @@ export default function Index() {
         onDismiss={() => setRecordModalVisible(false)}
         onSubmit={handleModalSubmit}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     backgroundColor: "#f5f5f5",
+    paddingHorizontal: 16,
   },
   header: {
     flexDirection: "row",

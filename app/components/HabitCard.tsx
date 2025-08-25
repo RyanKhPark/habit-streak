@@ -1,7 +1,8 @@
 import { Habit, HabitCompletion } from "@/types/database.type";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, TouchableOpacity } from "react-native";
 import { Surface, Text } from "react-native-paper";
+import { useRouter } from "expo-router";
 
 interface HabitCardProps {
   habit: Habit;
@@ -10,15 +11,22 @@ interface HabitCardProps {
 }
 
 export function HabitCard({ habit, isCompleted, lastCompletion }: HabitCardProps) {
+  const router = useRouter();
+  
   const formatLastValue = (completion: HabitCompletion) => {
     return completion.display_value || completion.value || null;
   };
 
+  const handlePress = () => {
+    router.push(`/habit-records/${habit.$id}`);
+  };
+
   return (
-    <Surface
-      style={[styles.card, isCompleted && styles.cardCompleted]}
-      elevation={0}
-    >
+    <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
+      <Surface
+        style={[styles.card, isCompleted && styles.cardCompleted]}
+        elevation={0}
+      >
       <View style={styles.cardContent}>
         <Text style={styles.cardTitle}>{habit.title}</Text>
         <Text style={styles.cardDescription}>{habit.description}</Text>
@@ -37,7 +45,7 @@ export function HabitCard({ habit, isCompleted, lastCompletion }: HabitCardProps
           <View style={styles.streakBadge}>
             <MaterialCommunityIcons name="fire" size={18} color={"#ff9800"} />
             <Text style={styles.streakText}>
-              {(habit as any).user_streak_count || habit.streak_count || 0} day streak
+              {(habit as any).user_streak_count || 0} day streak
             </Text>
           </View>
           <View style={styles.frequencyBadge}>
@@ -56,7 +64,8 @@ export function HabitCard({ habit, isCompleted, lastCompletion }: HabitCardProps
           )}
         </View>
       </View>
-    </Surface>
+      </Surface>
+    </TouchableOpacity>
   );
 }
 

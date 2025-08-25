@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { ID, Models } from "react-native-appwrite";
-import { account } from "./appwrite";
+import { account, databases, DATABASE_ID, USERS_COLLECTION_ID } from "./appwrite";
 
 type AuthContextType = {
   user: Models.User<Models.Preferences> | null;
@@ -36,8 +36,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     try {
-      await account.create(ID.unique(), email, password);
+      const authUser = await account.create(ID.unique(), email, password);
       await signIn(email, password);
+      
+      // Create user document in database
+      try {
+        await databases.createDocument(
+          DATABASE_ID,
+          USERS_COLLECTION_ID,
+          ID.unique(),
+          {
+            auth_user_id: authUser.$id,
+            email: authUser.email,
+            name: authUser.name || email.split('@')[0],
+            joined_at: new Date().toISOString(),
+            last_active: new Date().toISOString(),
+            total_habits_created: 0,
+            total_habits_joined: 0,
+            longest_streak: 0,
+            current_active_streaks: 0,
+          }
+        );
+      } catch (dbError) {
+        console.error("Failed to create user document:", dbError);
+        // Continue even if database creation fails
+      }
+      
       return null;
     } catch (error) {
       if (error instanceof Error) {

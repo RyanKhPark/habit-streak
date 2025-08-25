@@ -12,6 +12,7 @@ import {
   IconButton,
 } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "expo-router";
 import * as ImagePicker from 'expo-image-picker';
@@ -79,7 +80,8 @@ export default function ProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.container}>
       {/* Profile Header */}
       <Card style={styles.headerCard}>
         <Card.Content style={styles.headerContent}>
@@ -282,14 +284,18 @@ export default function ProfileScreen() {
           Habit Tracker v1.0.0
         </Text>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
     backgroundColor: "#f5f5f5",
+  },
+  container: {
+    flex: 1,
   },
   headerCard: {
     margin: 16,

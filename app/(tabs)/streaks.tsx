@@ -13,6 +13,7 @@ import { StyleSheet, View } from "react-native";
 import { Query } from "react-native-appwrite";
 import { ScrollView } from "react-native-gesture-handler";
 import { Card, Text } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function StreaksScreen() {
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -157,7 +158,7 @@ export default function StreaksScreen() {
 
   const badgeStyles = [styles.badge1, styles.badge2, styles.badge3];
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Text style={styles.title} variant="headlineSmall">
         Habit Streaks
       </Text>
@@ -215,7 +216,7 @@ export default function StreaksScreen() {
           ))}
         </ScrollView>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -223,7 +224,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
-    padding: 16,
+    paddingHorizontal: 16,
   },
   title: {
     fontWeight: "bold",

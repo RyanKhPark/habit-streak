@@ -22,9 +22,14 @@ export interface HabitParticipant extends Models.Document {
   habit_id: string;
   user_id: string;
   joined_at: string;
-  streak_count: number; // Individual streak for this user
-  last_completed?: string; // When this user last completed the habit
+  current_streak: number; // Individual current streak for this user
+  longest_streak: number; // Individual longest streak for this user
+  total_completions: number; // Total completions by this user
+  last_completed_at?: string; // When this user last completed the habit
   is_active: boolean; // Whether user is still participating
+  reminder_time?: string; // Optional reminder time
+  personal_target?: string; // Personal target for this habit
+  notes?: string; // Personal notes
 }
 
 export interface HabitCompletion extends Models.Document {

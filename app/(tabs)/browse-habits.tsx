@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState, useMemo } from "react";
 import { StyleSheet, View, FlatList } from "react-native";
-import { Card, Text, Button, Chip } from "react-native-paper";
+import { Card, Text, Button, Chip, Searchbar } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth-context";
 import { useAllHabitsForBrowsing, useJoinHabit } from "@/lib/queries";
 import { Habit } from "@/types/database.type";
@@ -11,19 +12,27 @@ export default function BrowseHabitsScreen() {
   const { user } = useAuth();
   const { data: allHabits = [], isLoading, error } = useAllHabitsForBrowsing(user?.$id ?? "");
   const joinHabit = useJoinHabit();
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredHabits = useMemo(() => {
+    if (!searchQuery.trim()) return allHabits;
+    
+    const query = searchQuery.toLowerCase();
+    return allHabits.filter(habit => 
+      habit.title.toLowerCase().includes(query) ||
+      habit.description.toLowerCase().includes(query) ||
+      habit.frequency.toLowerCase().includes(query) ||
+      (habit.unit_label && habit.unit_label.toLowerCase().includes(query)) ||
+      (habit.target_value && habit.target_value.toLowerCase().includes(query))
+    );
+  }, [allHabits, searchQuery]);
 
   // Debug logging
   React.useEffect(() => {
     console.log("All habits count:", allHabits.length);
-    console.log("All habits details:", allHabits.map(h => ({
-      id: h.$id,
-      title: h.title,
-      canJoin: h.canJoin,
-      isCreatedByUser: h.isCreatedByUser,
-      isJoinedByUser: h.isJoinedByUser,
-    })));
+    console.log("Filtered habits count:", filteredHabits.length);
     if (error) console.log("Error loading habits:", error);
-  }, [allHabits, error]);
+  }, [allHabits, filteredHabits, error]);
 
   const handleJoinHabit = async (habitId: string) => {
     if (!user) return;
@@ -125,7 +134,7 @@ export default function BrowseHabitsScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text variant="headlineSmall" style={styles.title}>
           Browse Habits
@@ -133,6 +142,16 @@ export default function BrowseHabitsScreen() {
         <Text variant="bodyMedium" style={styles.subtitle}>
           Join habits created by other users
         </Text>
+        
+        <Searchbar
+          placeholder="Search habits..."
+          onChangeText={setSearchQuery}
+          value={searchQuery}
+          style={styles.searchbar}
+          inputStyle={styles.searchInput}
+          icon="magnify"
+          clearIcon="close"
+        />
       </View>
 
       {allHabits.length === 0 ? (
@@ -144,17 +163,26 @@ export default function BrowseHabitsScreen() {
             Create your first habit to get started!
           </Text>
         </View>
+      ) : filteredHabits.length === 0 ? (
+        <View style={styles.centerContainer}>
+          <Text style={styles.emptyText}>
+            No habits match your search.
+          </Text>
+          <Text style={styles.emptySubtext}>
+            Try different keywords or clear your search.
+          </Text>
+        </View>
       ) : (
         <FlatList
-          data={allHabits}
+          data={filteredHabits}
           renderItem={renderHabitCard}
           keyExtractor={(item, index) => `${item.$id}-${index}`}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
-          extraData={allHabits.length}
+          extraData={filteredHabits.length}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -175,6 +203,14 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     color: "#666",
+    marginBottom: 16,
+  },
+  searchbar: {
+    backgroundColor: "#f5f5f5",
+    elevation: 0,
+  },
+  searchInput: {
+    color: "#333",
   },
   centerContainer: {
     flex: 1,

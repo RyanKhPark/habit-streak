@@ -13,6 +13,7 @@ import {
   Switch,
   Chip,
 } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const FREQUENCIES = ["daily", "weekly", "monthly"];
 type Frequency = (typeof FREQUENCIES)[number];
@@ -66,7 +67,7 @@ export default function AddHabitScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <TextInput
         label="Title"
         mode="outlined"
@@ -153,15 +154,15 @@ export default function AddHabitScreen() {
         Add Habit
       </Button>
       {error && <Text style={{ color: theme.colors.error }}>{error}</Text>}
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     backgroundColor: "#f5f5f5",
+    paddingHorizontal: 16,
   },
 
   input: {

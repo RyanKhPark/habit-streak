@@ -4,6 +4,7 @@ import {
   databases,
   HABITS_COLLECTION_ID,
   PARTICIPANTS_COLLECTION_ID,
+  USERS_COLLECTION_ID,
 } from "@/lib/appwrite";
 import { Habit, HabitCompletion, HabitParticipant } from "@/types/database.type";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -40,6 +41,17 @@ export const useUserHabits = (userId: string) => {
           return [];
         }
         
+        // Get all active participants to calculate participant counts
+        const allParticipantsResponse = await databases.listDocuments(
+          DATABASE_ID,
+          PARTICIPANTS_COLLECTION_ID,
+          [
+            Query.equal("is_active", true),
+            Query.limit(1000)
+          ]
+        );
+        const allParticipants = allParticipantsResponse.documents as HabitParticipant[];
+        
         // Get the actual habit details
         const habitIds = participants.map(p => p.habit_id);
         const habitsResponse = await databases.listDocuments(
@@ -48,25 +60,28 @@ export const useUserHabits = (userId: string) => {
           habitIds.length > 0 ? [Query.contains("$id", habitIds)] : []
         );
         
-        // Combine habit data with user's participation data
+        // Combine habit data with user's participation data and accurate participant counts
         const habits = habitsResponse.documents as Habit[];
         return habits.map(habit => {
           const participation = participants.find(p => p.habit_id === habit.$id);
+          const actualParticipantCount = allParticipants.filter(p => p.habit_id === habit.$id).length;
+          
           return {
             ...habit,
-            user_streak_count: participation?.streak_count || 0,
-            user_last_completed: participation?.last_completed,
+            participant_count: actualParticipantCount, // Override with actual count
+            user_streak_count: participation?.current_streak || 0,
+            user_last_completed: participation?.last_completed_at,
           };
         });
       } catch (error) {
         console.log("Participants table not found, falling back to old schema");
         
-        // Fallback to old schema where habits have user_id
+        // Fallback to habits created by user
         try {
           const response = await databases.listDocuments(
             DATABASE_ID,
             HABITS_COLLECTION_ID,
-            [Query.equal("user_id", userId)]
+            [Query.equal("created_by", userId)]
           );
           return response.documents as Habit[];
         } catch (fallbackError) {
@@ -104,30 +119,38 @@ export const useAllHabitsForBrowsing = (userId: string) => {
         }
 
         let joinedHabitIds: string[] = [];
+        let allParticipants: HabitParticipant[] = [];
         
-        // Get habits the user has already joined
+        // Get all active participants to calculate participant counts
         try {
           const participantResponse = await databases.listDocuments(
             DATABASE_ID,
             PARTICIPANTS_COLLECTION_ID,
             [
-              Query.equal("user_id", userId),
-              Query.equal("is_active", true)
+              Query.equal("is_active", true),
+              Query.limit(1000)
             ]
           );
-          joinedHabitIds = participantResponse.documents.map((p: HabitParticipant) => p.habit_id);
+          allParticipants = participantResponse.documents as HabitParticipant[];
+          joinedHabitIds = allParticipants
+            .filter(p => p.user_id === userId)
+            .map(p => p.habit_id);
         } catch (error) {
           console.log("Participants collection not found, using user_id for ownership check");
         }
         
-        // Return all habits with join status metadata
+        // Return all habits with join status metadata and accurate participant counts
         return habitsResponse.documents.map(habit => {
           const habitUserId = (habit as any).user_id || (habit as any).created_by;
           const isCreatedByUser = habitUserId === userId;
           const isJoinedByUser = joinedHabitIds.includes(habit.$id);
           
+          // Calculate actual participant count
+          const actualParticipantCount = allParticipants.filter(p => p.habit_id === habit.$id).length;
+          
           return {
             ...habit,
+            participant_count: actualParticipantCount, // Override with actual count
             canJoin: !isCreatedByUser && !isJoinedByUser,
             isCreatedByUser,
             isJoinedByUser,
@@ -194,7 +217,6 @@ export const useCreateHabit = () => {
         Object.entries({
           ...habitData,
           is_public: habitData.is_public ?? true, // Default to public
-          participant_count: 1, // Creator is the first participant
           created_at: new Date().toISOString(),
         }).filter(([_, value]) => value !== undefined)
       );
@@ -216,7 +238,9 @@ export const useCreateHabit = () => {
           habit_id: habit.$id,
           user_id: habitData.created_by,
           joined_at: new Date().toISOString(),
-          streak_count: 0,
+          current_streak: 0,
+          longest_streak: 0,
+          total_completions: 0,
           is_active: true,
         }
       );
@@ -246,21 +270,13 @@ export const useJoinHabit = () => {
           habit_id: habitId,
           user_id: userId,
           joined_at: new Date().toISOString(),
-          streak_count: 0,
+          current_streak: 0,
+          longest_streak: 0,
+          total_completions: 0,
           is_active: true,
         }
       );
-
-      // Update participant count
-      const habit = await databases.getDocument(DATABASE_ID, HABITS_COLLECTION_ID, habitId);
-      await databases.updateDocument(
-        DATABASE_ID,
-        HABITS_COLLECTION_ID,
-        habitId,
-        {
-          participant_count: (habit.participant_count || 0) + 1,
-        }
-      );
+      // No need to manually update participant_count - it's calculated dynamically
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.userHabits });
@@ -295,17 +311,7 @@ export const useLeaveHabit = () => {
           participant.$id,
           { is_active: false }
         );
-
-        // Update participant count
-        const habit = await databases.getDocument(DATABASE_ID, HABITS_COLLECTION_ID, habitId);
-        await databases.updateDocument(
-          DATABASE_ID,
-          HABITS_COLLECTION_ID,
-          habitId,
-          {
-            participant_count: Math.max((habit.participant_count || 1) - 1, 0),
-          }
-        );
+        // No need to manually update participant_count - it's calculated dynamically
       }
     },
     onSuccess: () => {
@@ -384,8 +390,10 @@ export const useCompleteHabit = () => {
           PARTICIPANTS_COLLECTION_ID,
           participant.$id,
           {
-            streak_count: (participant.streak_count || 0) + 1,
-            last_completed: currentDate,
+            current_streak: (participant.current_streak || 0) + 1,
+            longest_streak: Math.max(participant.longest_streak || 0, (participant.current_streak || 0) + 1),
+            total_completions: (participant.total_completions || 0) + 1,
+            last_completed_at: currentDate,
           }
         );
       }
@@ -395,6 +403,35 @@ export const useCompleteHabit = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.userHabits });
       queryClient.invalidateQueries({ queryKey: queryKeys.completions });
       queryClient.invalidateQueries({ queryKey: queryKeys.participants });
+    },
+  });
+};
+
+// Create user in database
+export const useCreateUser = () => {
+  return useMutation({
+    mutationFn: async (userData: {
+      auth_user_id: string;
+      email: string;
+      name?: string;
+    }) => {
+      const userDoc = await databases.createDocument(
+        DATABASE_ID,
+        USERS_COLLECTION_ID,
+        ID.unique(),
+        {
+          auth_user_id: userData.auth_user_id,
+          email: userData.email,
+          name: userData.name || userData.email.split('@')[0],
+          joined_at: new Date().toISOString(),
+          last_active: new Date().toISOString(),
+          total_habits_created: 0,
+          total_habits_joined: 0,
+          longest_streak: 0,
+          current_active_streaks: 0,
+        }
+      );
+      return userDoc;
     },
   });
 };
