@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { 
   Card, 
@@ -6,7 +6,6 @@ import {
   Avatar, 
   Chip,
   ActivityIndicator,
-  DataTable,
   Modal,
   Portal,
   Button,
@@ -39,12 +38,22 @@ export default function HabitRecordsScreen() {
   const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'all'>('week');
   const [selectedUser, setSelectedUser] = useState<TableData['users'][0] | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (habitId) {
       fetchHabitRecords();
     }
   }, [habitId, timeFilter]);
+
+  // Auto-scroll to show today's column (leftmost after reverse)
+  useEffect(() => {
+    if (tableData.dates.length > 0 && scrollViewRef.current) {
+      setTimeout(() => {
+        scrollViewRef.current?.scrollTo({ x: 0, animated: false });
+      }, 100);
+    }
+  }, [tableData.dates.length]);
 
   const fetchHabitRecords = async () => {
     try {
@@ -58,49 +67,49 @@ export default function HabitRecordsScreen() {
       );
       setHabit(habitResponse as Habit);
 
-      // Calculate date filter and generate date range
-      const now = new Date();
-      let startDate = new Date();
+      // SIMPLE DATE LOGIC - Get dates based on filter
+      let dates: string[] = [];
+      const today = DateUtils.getTodayLocal();
+      
       
       switch (timeFilter) {
         case 'today':
-          startDate.setHours(0, 0, 0, 0);
+          dates = [today];
           break;
         case 'week':
-          startDate.setDate(now.getDate() - 7);
+          dates = DateUtils.getWeekDates();
           break;
         case 'month':
-          startDate.setMonth(now.getMonth() - 1);
+          const monthAgo = new Date();
+          monthAgo.setMonth(monthAgo.getMonth() - 1);
+          dates = DateUtils.getDateRange(monthAgo, new Date());
           break;
         case 'all':
-          startDate = new Date('2020-01-01');
+          const yearAgo = new Date();
+          yearAgo.setFullYear(yearAgo.getFullYear() - 1);
+          dates = DateUtils.getDateRange(yearAgo, new Date());
           break;
       }
-
-      // Generate array of dates for table headers
-      const dates: string[] = [];
-      const currentDate = new Date(startDate);
-      const endDate = new Date(now);
-      endDate.setHours(23, 59, 59, 999);
-
-      while (currentDate <= endDate) {
-        dates.push(currentDate.toISOString().split('T')[0]);
-        currentDate.setDate(currentDate.getDate() + 1);
+      
+      // Always ensure today is included
+      if (!dates.includes(today)) {
+        dates.push(today);
+        dates.sort();
       }
 
-      // Fetch all completions for this habit within time filter
+      // Fetch ALL completions for this habit (no date filtering in query)
       const completionsResponse = await databases.listDocuments(
         DATABASE_ID,
         COMPLETIONS_COLLECTION_ID,
         [
           Query.equal('habit_id', habitId!),
-          Query.greaterThanEqual('completed_at', startDate.toISOString()),
           Query.orderDesc('completed_at'),
           Query.limit(1000)
         ]
       );
 
       const completions = completionsResponse.documents as HabitCompletion[];
+      
       
       // Group completions by user and date
       const userCompletionsMap = new Map<string, {
@@ -110,8 +119,13 @@ export default function HabitRecordsScreen() {
       }>();
       
       for (const completion of completions) {
-        const completionDate = completion.completed_at.split('T')[0];
-        const todayDate = now.toISOString().split('T')[0];
+        const completionDate = DateUtils.utcToLocalDate(completion.completed_at);
+        
+        // Only process completions that fall within our date range
+        if (!dates.includes(completionDate)) {
+          continue;
+        }
+        
         
         if (!userCompletionsMap.has(completion.user_id)) {
           const userName = completion.user_id === user?.$id 
@@ -127,13 +141,13 @@ export default function HabitRecordsScreen() {
         
         const userRecord = userCompletionsMap.get(completion.user_id)!;
         
-        // Store completion for the date (only keep the most recent one per date)
+        // Store completion for the date
         if (!userRecord.completions[completionDate]) {
           userRecord.completions[completionDate] = completion;
         }
         
         // Track today's completion time for sorting
-        if (completionDate === todayDate) {
+        if (completionDate === today) {
           userRecord.todayCompletionTime = completion.completed_at;
         }
       }
@@ -146,25 +160,26 @@ export default function HabitRecordsScreen() {
         todayCompletionTime: data.todayCompletionTime
       }));
 
-      // Sort users: those who completed today first (by completion time), then others
+      // Sort users: those who completed today first
       users.sort((a, b) => {
         const aHasToday = !!a.todayCompletionTime;
         const bHasToday = !!b.todayCompletionTime;
         
         if (aHasToday && bHasToday) {
-          // Both completed today, sort by completion time (earlier first)
           return a.todayCompletionTime!.localeCompare(b.todayCompletionTime!);
         } else if (aHasToday) {
-          return -1; // a goes first
+          return -1;
         } else if (bHasToday) {
-          return 1; // b goes first
+          return 1;
         } else {
-          // Neither completed today, sort alphabetically by name
           return a.user_name.localeCompare(b.user_name);
         }
       });
 
-      setTableData({ dates: dates.reverse(), users }); // Reverse dates to show most recent first
+      // Reverse dates to show most recent first
+      const finalDates = dates.reverse();
+      setTableData({ dates: finalDates, users });
+      
     } catch (error) {
       console.error('Error fetching habit records:', error);
     } finally {
@@ -178,8 +193,60 @@ export default function HabitRecordsScreen() {
   };
 
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr);
-    return `${date.getMonth() + 1}/${date.getDate()}`;
+    // IMPORTANT: dateStr is in YYYY-MM-DD format, not a timestamp
+    // Don't use new Date() which can cause timezone issues
+    const [year, month, day] = dateStr.split('-');
+    return `${month}/${day}`;
+  };
+
+  // COMPLETELY NEW DATE LOGIC - Simple and bulletproof
+  const DateUtils = {
+    // Get today's date string in user's timezone (YYYY-MM-DD)
+    getTodayLocal: () => {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    },
+
+    // Convert any Date to local date string (YYYY-MM-DD)
+    toLocalDateString: (date: Date) => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    },
+
+    // Convert UTC timestamp to local date string
+    utcToLocalDate: (utcTimestamp: string) => {
+      const date = new Date(utcTimestamp);
+      const result = DateUtils.toLocalDateString(date);
+      
+      
+      return result;
+    },
+
+    // Generate array of date strings from start to end (inclusive)
+    getDateRange: (startDate: Date, endDate: Date) => {
+      const dates: string[] = [];
+      const current = new Date(startDate);
+      
+      while (current <= endDate) {
+        dates.push(DateUtils.toLocalDateString(current));
+        current.setDate(current.getDate() + 1);
+      }
+      
+      return dates;
+    },
+
+    // Get dates for the past week including today
+    getWeekDates: () => {
+      const today = new Date();
+      const weekAgo = new Date(today);
+      weekAgo.setDate(today.getDate() - 7);
+      return DateUtils.getDateRange(weekAgo, today);
+    }
   };
 
   const handleUserPress = (userData: TableData['users'][0]) => {
@@ -368,30 +435,38 @@ export default function HabitRecordsScreen() {
 
       <Card style={styles.tableCard}>
         <Card.Content>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <DataTable style={styles.table}>
-              <DataTable.Header>
-                <DataTable.Title style={styles.userColumn}>
+          <ScrollView 
+            ref={scrollViewRef}
+            horizontal 
+            showsHorizontalScrollIndicator={false}
+          >
+            <View style={[styles.customTable, { minWidth: 150 + (tableData.dates.length * 80) }]}>
+              {/* Custom Table Header */}
+              <View style={styles.customTableHeader}>
+                <View style={[styles.customHeaderCell, styles.userColumn]}>
                   <Text variant="titleSmall" style={styles.headerText}>Member</Text>
-                </DataTable.Title>
-                {tableData.dates.map((date) => (
-                  <DataTable.Title key={date} style={styles.dateColumn}>
-                    <Text variant="bodySmall" style={styles.headerText}>
-                      {formatDate(date)}
-                    </Text>
-                  </DataTable.Title>
-                ))}
-              </DataTable.Header>
+                </View>
+                {tableData.dates.map((date) => {
+                  const isToday = date === DateUtils.getTodayLocal();
+                  return (
+                    <View key={date} style={[styles.customHeaderCell, styles.dateColumn, isToday && styles.todayColumn]}>
+                      <Text variant="bodySmall" style={[styles.headerText, isToday && styles.todayHeaderText]}>
+                        {formatDate(date)}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
 
+              {/* Custom Table Rows */}
               {tableData.users.map((userData) => {
                 const isCurrentUser = userData.user_id === user?.$id;
                 return (
-                  <DataTable.Row 
+                  <View 
                     key={userData.user_id} 
-                    style={[styles.tableRow, isCurrentUser && styles.currentUserRow]}
-                    onPress={() => handleUserPress(userData)}
+                    style={[styles.customTableRow, isCurrentUser && styles.currentUserRow]}
                   >
-                    <DataTable.Cell style={styles.userColumn}>
+                    <View style={[styles.customCell, styles.userColumn]}>
                       <View style={styles.userCell}>
                         <Avatar.Text 
                           size={24} 
@@ -402,29 +477,29 @@ export default function HabitRecordsScreen() {
                           {userData.user_name}{isCurrentUser && ' (You)'}
                         </Text>
                       </View>
-                    </DataTable.Cell>
+                    </View>
                     {tableData.dates.map((date) => {
                       const completion = userData.completions[date];
-                      const isToday = date === new Date().toISOString().split('T')[0];
+                      const isToday = date === DateUtils.getTodayLocal();
                       const hasCompletedToday = isToday && completion;
                       
                       return (
-                        <DataTable.Cell key={date} style={styles.dateColumn}>
+                        <View key={date} style={[styles.customCell, styles.dateColumn, isToday && styles.todayColumn]}>
                           <View style={styles.cellContainer}>
                             <Text variant="bodySmall" style={styles.cellValue}>
-                              {formatValue(completion)}
+                              {formatValue(completion) || '-'}
                             </Text>
                             {hasCompletedToday && (
                               <View style={styles.todayDot} />
                             )}
                           </View>
-                        </DataTable.Cell>
+                        </View>
                       );
                     })}
-                  </DataTable.Row>
+                  </View>
                 );
               })}
-            </DataTable>
+            </View>
           </ScrollView>
         </Card.Content>
       </Card>
@@ -554,7 +629,40 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   table: {
-    minWidth: 600,
+    minWidth: 800, // Increased to ensure all columns fit
+    width: 'auto',
+  },
+  customTable: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+  },
+  customTableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#f5f5f5',
+    borderBottomWidth: 2,
+    borderBottomColor: '#e0e0e0',
+  },
+  customHeaderCell: {
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRightWidth: 1,
+    borderRightColor: '#e0e0e0',
+  },
+  customTableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    minHeight: 50,
+  },
+  customCell: {
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRightWidth: 1,
+    borderRightColor: '#e0e0e0',
   },
   userColumn: {
     flex: 2,
@@ -562,7 +670,8 @@ const styles = StyleSheet.create({
   },
   dateColumn: {
     flex: 1,
-    minWidth: 60,
+    minWidth: 70, // Slightly wider to ensure visibility
+    width: 70, // Fixed width for consistency
     justifyContent: 'center',
   },
   tableRow: {
@@ -575,6 +684,13 @@ const styles = StyleSheet.create({
   headerText: {
     fontWeight: 'bold',
     color: '#333',
+  },
+  todayColumn: {
+    backgroundColor: '#e8f5e8',
+  },
+  todayHeaderText: {
+    color: '#4caf50',
+    fontWeight: 'bold',
   },
   userCell: {
     flexDirection: 'row',
@@ -593,6 +709,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+    minHeight: 40,
+    paddingVertical: 8,
   },
   cellValue: {
     textAlign: 'center',
