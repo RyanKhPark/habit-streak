@@ -1,29 +1,40 @@
-import React, { useState, useMemo } from "react";
-import { StyleSheet, View, FlatList } from "react-native";
-import { Card, Text, Button, Chip, Searchbar } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth-context";
 import { useAllHabitsForBrowsing, useJoinHabit } from "@/lib/queries";
 import { Habit } from "@/types/database.type";
+import React, { useMemo, useState } from "react";
+import { FlatList, StyleSheet, View } from "react-native";
+import { Button, Card, Chip, Searchbar, Text } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { AppHeader } from "../components/AppHeader";
+import { GradientBackground } from "../components/GradientBackground";
 
-type HabitWithJoinStatus = Habit & { canJoin: boolean; isCreatedByUser: boolean; isJoinedByUser: boolean };
+type HabitWithJoinStatus = Habit & {
+  canJoin: boolean;
+  isCreatedByUser: boolean;
+  isJoinedByUser: boolean;
+};
 
 export default function BrowseArenasScreen() {
   const { user } = useAuth();
-  const { data: allArenas = [], isLoading, error } = useAllHabitsForBrowsing(user?.$id ?? "");
+  const {
+    data: allArenas = [],
+    isLoading,
+    error,
+  } = useAllHabitsForBrowsing(user?.$id ?? "");
   const joinArena = useJoinHabit();
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredArenas = useMemo(() => {
     if (!searchQuery.trim()) return allArenas;
-    
+
     const query = searchQuery.toLowerCase();
-    return allArenas.filter(arena => 
-      arena.title.toLowerCase().includes(query) ||
-      arena.description.toLowerCase().includes(query) ||
-      arena.frequency.toLowerCase().includes(query) ||
-      (arena.unit_label && arena.unit_label.toLowerCase().includes(query)) ||
-      (arena.target_value && arena.target_value.toLowerCase().includes(query))
+    return allArenas.filter(
+      (arena) =>
+        arena.title.toLowerCase().includes(query) ||
+        arena.description.toLowerCase().includes(query) ||
+        arena.frequency.toLowerCase().includes(query) ||
+        (arena.unit_label && arena.unit_label.toLowerCase().includes(query)) ||
+        (arena.target_value && arena.target_value.toLowerCase().includes(query))
     );
   }, [allArenas, searchQuery]);
 
@@ -36,7 +47,7 @@ export default function BrowseArenasScreen() {
 
   const handleJoinArena = async (arenaId: string) => {
     if (!user) return;
-    
+
     try {
       await joinArena.mutateAsync({ habitId: arenaId, userId: user.$id });
     } catch (error) {
@@ -57,42 +68,41 @@ export default function BrowseArenasScreen() {
             </Text>
           </View>
         </View>
-        
+
         <Text variant="bodyMedium" style={styles.arenaDescription}>
           {arena.description}
         </Text>
-        
+
         <View style={styles.arenaMeta}>
-          <Chip style={styles.frequencyChip}>
-            {arena.frequency}
-          </Chip>
-          
-          {arena.unit_type && arena.unit_type !== 'boolean' && (
+          <Chip style={styles.frequencyChip}>{arena.frequency}</Chip>
+
+          {arena.unit_type && arena.unit_type !== "boolean" && (
             <Chip style={styles.typeChip}>
-              {arena.unit_type === 'number' && `Track: ${arena.unit_label || 'numbers'}`}
-              {arena.unit_type === 'time' && 'Track: time'}
-              {arena.unit_type === 'text' && 'Track: notes'}
+              {arena.unit_type === "number" &&
+                `Track: ${arena.unit_label || "numbers"}`}
+              {arena.unit_type === "time" && "Track: time"}
+              {arena.unit_type === "text" && "Track: notes"}
             </Chip>
           )}
-          
+
           {arena.target_value && (
-            <Chip style={styles.targetChip}>
-              Goal: {arena.target_value}
-            </Chip>
+            <Chip style={styles.targetChip}>Goal: {arena.target_value}</Chip>
           )}
         </View>
-        
+
         <View style={styles.creatorInfo}>
           <Text variant="bodySmall" style={styles.creatorText}>
-            {arena.isCreatedByUser ? (
-              "Created by you"
-            ) : (
-              `Created by User ${(arena.created_by || (arena as any).user_id || 'Unknown').slice(-4)}`
-            )}
+            {arena.isCreatedByUser
+              ? "Created by you"
+              : `Created by User ${(
+                  arena.created_by ||
+                  (arena as any).user_id ||
+                  "Unknown"
+                ).slice(-4)}`}
           </Text>
         </View>
       </Card.Content>
-      
+
       <Card.Actions>
         {arena.canJoin ? (
           <Button
@@ -105,19 +115,11 @@ export default function BrowseArenasScreen() {
             Join Arena
           </Button>
         ) : arena.isJoinedByUser ? (
-          <Button
-            mode="outlined"
-            disabled
-            style={styles.joinedButton}
-          >
+          <Button mode="outlined" disabled style={styles.joinedButton}>
             Already Joined
           </Button>
         ) : arena.isCreatedByUser ? (
-          <Button
-            mode="outlined"
-            disabled
-            style={styles.ownArenaButton}
-          >
+          <Button mode="outlined" disabled style={styles.ownArenaButton}>
             Your Arena
           </Button>
         ) : null}
@@ -134,80 +136,78 @@ export default function BrowseArenasScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text variant="headlineSmall" style={styles.title}>
-          Browse Arenas
-        </Text>
-        <Text variant="bodyMedium" style={styles.subtitle}>
-          Join arenas created by other users
-        </Text>
-        
-        <Searchbar
-          placeholder="Search arenas..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={styles.searchbar}
-          inputStyle={styles.searchInput}
-          icon="magnify"
-          clearIcon="close"
-        />
-      </View>
+    <GradientBackground>
+      <SafeAreaView style={styles.container}>
+        <AppHeader title="Browse Arenas" />
+        <View style={styles.content}>
+          <View style={styles.searchSection}>
+            {/* <Text variant="bodyMedium" style={styles.subtitle}>
+            Join arenas created by other users
+          </Text> */}
 
-      {allArenas.length === 0 ? (
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>
-            No arenas found.
-          </Text>
-          <Text style={styles.emptySubtext}>
-            Create your first arena to get started!
-          </Text>
+            <Searchbar
+              placeholder="Search arenas..."
+              onChangeText={setSearchQuery}
+              value={searchQuery}
+              style={styles.searchbar}
+              inputStyle={styles.searchInput}
+              icon="magnify"
+              clearIcon="close"
+            />
+          </View>
+
+          {allArenas.length === 0 ? (
+            <View style={styles.centerContainer}>
+              <Text style={styles.emptyText}>No arenas found.</Text>
+              <Text style={styles.emptySubtext}>
+                Create your first arena to get started!
+              </Text>
+            </View>
+          ) : filteredArenas.length === 0 ? (
+            <View style={styles.centerContainer}>
+              <Text style={styles.emptyText}>No arenas match your search.</Text>
+              <Text style={styles.emptySubtext}>
+                Try different keywords or clear your search.
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={filteredArenas}
+              renderItem={renderArenaCard}
+              keyExtractor={(item, index) => `${item.$id}-${index}`}
+              contentContainerStyle={styles.listContainer}
+              showsVerticalScrollIndicator={false}
+              extraData={filteredArenas.length}
+            />
+          )}
         </View>
-      ) : filteredArenas.length === 0 ? (
-        <View style={styles.centerContainer}>
-          <Text style={styles.emptyText}>
-            No arenas match your search.
-          </Text>
-          <Text style={styles.emptySubtext}>
-            Try different keywords or clear your search.
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredArenas}
-          renderItem={renderArenaCard}
-          keyExtractor={(item, index) => `${item.$id}-${index}`}
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-          extraData={filteredArenas.length}
-        />
-      )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "transparent",
   },
-  header: {
+  content: {
+    flex: 1,
+  },
+  searchSection: {
     padding: 16,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e0e0e0",
-  },
-  title: {
-    fontWeight: "bold",
-    marginBottom: 4,
+    backgroundColor: "transparent",
   },
   subtitle: {
     color: "#666",
     marginBottom: 16,
   },
   searchbar: {
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "transparent",
     elevation: 0,
+    borderColor: "#333",
+    borderWidth: 1,
+    borderRadius: 12,
   },
   searchInput: {
     color: "#333",

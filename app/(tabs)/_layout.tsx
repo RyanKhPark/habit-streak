@@ -1,5 +1,4 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-
 import { Tabs } from "expo-router";
 
 export default function TabsLayout() {
@@ -9,10 +8,11 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: "#f5f5f5" },
         headerShadowVisible: false,
         tabBarStyle: {
-          backgroundColor: "#f5f5f5",
+          backgroundColor: "transparent",
           borderTopWidth: 0,
           elevation: 0,
           shadowOpacity: 0,
+          position: "absolute",
         },
         tabBarActiveTintColor: "#6200ee",
         tabBarInactiveTintColor: "#666666",
@@ -21,6 +21,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
+          title: "Home",
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
@@ -66,19 +67,6 @@ export default function TabsLayout() {
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="compass" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons
-              name="account-circle"
-              size={size}
-              color={color}
-            />
           ),
         }}
       />

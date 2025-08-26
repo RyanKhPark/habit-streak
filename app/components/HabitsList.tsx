@@ -58,6 +58,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   emptyStateText: {
-    color: "#666666",
+    color: "#999",
+    fontSize: 16,
+    fontWeight: "500",
   },
 });
