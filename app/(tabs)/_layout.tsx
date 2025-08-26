@@ -48,6 +48,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="add-habit"
         options={{
+          title: "Open Arena",
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons
@@ -61,6 +62,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="browse-habits"
         options={{
+          title: "Arenas",
           headerShown: false,
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="compass" size={size} color={color} />

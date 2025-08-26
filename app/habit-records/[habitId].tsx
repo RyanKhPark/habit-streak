@@ -13,26 +13,26 @@ import {
 } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
-import { databases, DATABASE_ID, COMPLETIONS_COLLECTION_ID, HABITS_COLLECTION_ID } from '@/lib/appwrite';
+import { databases, DATABASE_ID, COMPLETIONS_COLLECTION_ID, ARENAS_COLLECTION_ID } from '@/lib/appwrite';
 import { Query } from 'react-native-appwrite';
-import { Habit, HabitCompletion, UserRecord } from '@/types/database.type';
+import { Arena, ArenaCompletion, UserRecord } from '@/types/database.type';
 
 interface TableData {
   dates: string[];
   users: {
     user_id: string;
     user_name: string;
-    completions: { [date: string]: HabitCompletion | null };
+    completions: { [date: string]: ArenaCompletion | null };
     todayCompletionTime?: string;
   }[];
 }
 
-export default function HabitRecordsScreen() {
-  const { habitId } = useLocalSearchParams<{ habitId: string }>();
+export default function ArenaRecordsScreen() {
+  const { arenaId } = useLocalSearchParams<{ arenaId: string }>();
   const { user } = useAuth();
   const router = useRouter();
   
-  const [habit, setHabit] = useState<Habit | null>(null);
+  const [arena, setArena] = useState<Arena | null>(null);
   const [tableData, setTableData] = useState<TableData>({ dates: [], users: [] });
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'all'>('week');
@@ -41,10 +41,10 @@ export default function HabitRecordsScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    if (habitId) {
-      fetchHabitRecords();
+    if (arenaId) {
+      fetchArenaRecords();
     }
-  }, [habitId, timeFilter]);
+  }, [arenaId, timeFilter]);
 
   // Auto-scroll to show today's column (leftmost after reverse)
   useEffect(() => {
@@ -55,139 +55,111 @@ export default function HabitRecordsScreen() {
     }
   }, [tableData.dates.length]);
 
-  const fetchHabitRecords = async () => {
+  const fetchArenaRecords = async () => {
     try {
       setLoading(true);
       
-      // Fetch habit details
-      const habitResponse = await databases.getDocument(
+      // Fetch arena details
+      const arenaResponse = await databases.getDocument(
         DATABASE_ID,
-        HABITS_COLLECTION_ID,
-        habitId!
+        ARENAS_COLLECTION_ID,
+        arenaId!
       );
-      setHabit(habitResponse as Habit);
+      setArena(arenaResponse as Arena);
 
-      // SIMPLE DATE LOGIC - Get dates based on filter
-      let dates: string[] = [];
-      const today = DateUtils.getTodayLocal();
-      
+      // Generate date range based on filter
+      const today = new Date();
+      const todayString = getTodayString();
+      let startDate = new Date();
       
       switch (timeFilter) {
         case 'today':
-          dates = [today];
+          startDate = today;
           break;
         case 'week':
-          dates = DateUtils.getWeekDates();
+          startDate.setDate(today.getDate() - 7);
           break;
         case 'month':
-          const monthAgo = new Date();
-          monthAgo.setMonth(monthAgo.getMonth() - 1);
-          dates = DateUtils.getDateRange(monthAgo, new Date());
+          startDate.setMonth(today.getMonth() - 1);
           break;
         case 'all':
-          const yearAgo = new Date();
-          yearAgo.setFullYear(yearAgo.getFullYear() - 1);
-          dates = DateUtils.getDateRange(yearAgo, new Date());
+          startDate.setFullYear(today.getFullYear() - 1);
           break;
       }
-      
-      // Always ensure today is included
-      if (!dates.includes(today)) {
-        dates.push(today);
-        dates.sort();
+
+      // Generate dates from start to today
+      const dates: string[] = [];
+      const current = new Date(startDate);
+      while (current <= today) {
+        dates.push(getDateString(current));
+        current.setDate(current.getDate() + 1);
       }
 
-      // Fetch ALL completions for this habit (no date filtering in query)
+      // Fetch ALL completions for this arena (no date filtering in query)
       const completionsResponse = await databases.listDocuments(
         DATABASE_ID,
         COMPLETIONS_COLLECTION_ID,
         [
-          Query.equal('habit_id', habitId!),
+          Query.equal('arena_id', arenaId!),
           Query.orderDesc('completed_at'),
           Query.limit(1000)
         ]
       );
 
-      const completions = completionsResponse.documents as HabitCompletion[];
+      const completions = completionsResponse.documents as ArenaCompletion[];
       
-      
-      // Group completions by user and date
-      const userCompletionsMap = new Map<string, {
+      // Group completions by user
+      const userMap = new Map<string, {
         user_name: string;
-        completions: { [date: string]: HabitCompletion | null };
+        completions: { [date: string]: ArenaCompletion };
         todayCompletionTime?: string;
       }>();
       
-      for (const completion of completions) {
-        const completionDate = DateUtils.utcToLocalDate(completion.completed_at);
+      completions.forEach(completion => {
+        const completionDate = utcToLocalDate(completion.completed_at);
+        if (!dates.includes(completionDate)) return;
         
-        // Only process completions that fall within our date range
-        if (!dates.includes(completionDate)) {
-          continue;
-        }
-        
-        
-        if (!userCompletionsMap.has(completion.user_id)) {
+        if (!userMap.has(completion.user_id)) {
           const userName = completion.user_id === user?.$id 
             ? (user?.name || 'You') 
             : `User ${completion.user_id.slice(-4)}`;
           
-          userCompletionsMap.set(completion.user_id, {
+          userMap.set(completion.user_id, {
             user_name: userName,
             completions: {},
-            todayCompletionTime: undefined
           });
         }
         
-        const userRecord = userCompletionsMap.get(completion.user_id)!;
+        const userRecord = userMap.get(completion.user_id)!;
+        userRecord.completions[completionDate] = completion;
         
-        // Store completion for the date
-        if (!userRecord.completions[completionDate]) {
-          userRecord.completions[completionDate] = completion;
-        }
-        
-        // Track today's completion time for sorting
-        if (completionDate === today) {
+        if (completionDate === todayString) {
           userRecord.todayCompletionTime = completion.completed_at;
         }
-      }
-
-      // Convert to array and sort users
-      const users = Array.from(userCompletionsMap.entries()).map(([user_id, data]) => ({
-        user_id,
-        user_name: data.user_name,
-        completions: data.completions,
-        todayCompletionTime: data.todayCompletionTime
-      }));
-
-      // Sort users: those who completed today first
-      users.sort((a, b) => {
-        const aHasToday = !!a.todayCompletionTime;
-        const bHasToday = !!b.todayCompletionTime;
-        
-        if (aHasToday && bHasToday) {
-          return a.todayCompletionTime!.localeCompare(b.todayCompletionTime!);
-        } else if (aHasToday) {
-          return -1;
-        } else if (bHasToday) {
-          return 1;
-        } else {
-          return a.user_name.localeCompare(b.user_name);
-        }
       });
+
+      // Convert to array and sort by today's completion
+      const users = Array.from(userMap.values())
+        .map(user => ({ ...user, user_id: '' })) // Add missing user_id if needed
+        .sort((a, b) => {
+          if (a.todayCompletionTime && b.todayCompletionTime) {
+            return a.todayCompletionTime.localeCompare(b.todayCompletionTime);
+          }
+          return (b.todayCompletionTime ? 1 : 0) - (a.todayCompletionTime ? 1 : 0);
+        });
 
       // Reverse dates to show most recent first
       const finalDates = dates.reverse();
       setTableData({ dates: finalDates, users });
       
     } catch (error) {
-      console.error('Error fetching habit records:', error);
+      console.error('Error fetching arena records:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatValue = (completion: HabitCompletion | null) => {
+  const formatValue = (completion: ArenaCompletion | null) => {
     if (!completion) return '';
     return completion.display_value || completion.value || '✓';
   };
@@ -199,62 +171,24 @@ export default function HabitRecordsScreen() {
     return `${month}/${day}`;
   };
 
-  // COMPLETELY NEW DATE LOGIC - Simple and bulletproof
-  const DateUtils = {
-    // Get today's date string in user's timezone (YYYY-MM-DD)
-    getTodayLocal: () => {
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    },
-
-    // Convert any Date to local date string (YYYY-MM-DD)
-    toLocalDateString: (date: Date) => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    },
-
-    // Convert UTC timestamp to local date string
-    utcToLocalDate: (utcTimestamp: string) => {
-      const date = new Date(utcTimestamp);
-      const result = DateUtils.toLocalDateString(date);
-      
-      
-      return result;
-    },
-
-    // Generate array of date strings from start to end (inclusive)
-    getDateRange: (startDate: Date, endDate: Date) => {
-      const dates: string[] = [];
-      const current = new Date(startDate);
-      
-      while (current <= endDate) {
-        dates.push(DateUtils.toLocalDateString(current));
-        current.setDate(current.getDate() + 1);
-      }
-      
-      return dates;
-    },
-
-    // Get dates for the past week including today
-    getWeekDates: () => {
-      const today = new Date();
-      const weekAgo = new Date(today);
-      weekAgo.setDate(today.getDate() - 7);
-      return DateUtils.getDateRange(weekAgo, today);
-    }
+  // Simple date utilities
+  const getDateString = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
+
+  const getTodayString = () => getDateString(new Date());
+
+  const utcToLocalDate = (utcTimestamp: string) => getDateString(new Date(utcTimestamp));
 
   const handleUserPress = (userData: TableData['users'][0]) => {
     setSelectedUser(userData);
     setModalVisible(true);
   };
 
-  const LineChart = ({ dates, userData, habit, formatValue, formatDate }) => {
+  const LineChart = ({ dates, userData, arena, formatValue, formatDate }) => {
     const chartWidth = Math.max(dates.length * 50, 300);
     const chartHeight = 120;
     const padding = { top: 20, right: 30, bottom: 40, left: 30 };
@@ -265,7 +199,7 @@ export default function HabitRecordsScreen() {
     const dataPoints = dates.map((date, index) => {
       const completion = userData.completions[date];
       const value = completion ? 
-        (habit?.unit_type === 'number' ? parseFloat(completion.value || '0') : 1) : 0;
+        (arena?.unit_type === 'number' ? parseFloat(completion.value || '0') : 1) : 0;
       return { date, value, hasCompletion: !!completion, index };
     });
 
@@ -273,7 +207,7 @@ export default function HabitRecordsScreen() {
     const allValues = tableData.users.flatMap(user => 
       Object.values(user.completions)
         .filter(c => c)
-        .map(c => habit?.unit_type === 'number' ? parseFloat(c!.value || '0') : 1)
+        .map(c => arena?.unit_type === 'number' ? parseFloat(c!.value || '0') : 1)
     );
     const maxValue = Math.max(...allValues, 1);
 
@@ -408,11 +342,11 @@ export default function HabitRecordsScreen() {
     <View style={styles.container}>
       <Card style={styles.headerCard}>
         <Card.Content>
-          <Text variant="headlineSmall" style={styles.habitTitle}>
-            {habit?.title}
+          <Text variant="headlineSmall" style={styles.arenaTitle}>
+            {arena?.title}
           </Text>
-          <Text variant="bodyMedium" style={styles.habitDescription}>
-            {habit?.description}
+          <Text variant="bodyMedium" style={styles.arenaDescription}>
+            {arena?.description}
           </Text>
           <Text variant="bodySmall" style={styles.sharedInfo}>
             🌟 Shared with {tableData.users.length} participants
@@ -447,7 +381,7 @@ export default function HabitRecordsScreen() {
                   <Text variant="titleSmall" style={styles.headerText}>Member</Text>
                 </View>
                 {tableData.dates.map((date) => {
-                  const isToday = date === DateUtils.getTodayLocal();
+                  const isToday = date === getTodayString();
                   return (
                     <View key={date} style={[styles.customHeaderCell, styles.dateColumn, isToday && styles.todayColumn]}>
                       <Text variant="bodySmall" style={[styles.headerText, isToday && styles.todayHeaderText]}>
@@ -480,7 +414,7 @@ export default function HabitRecordsScreen() {
                     </View>
                     {tableData.dates.map((date) => {
                       const completion = userData.completions[date];
-                      const isToday = date === DateUtils.getTodayLocal();
+                      const isToday = date === getTodayString();
                       const hasCompletedToday = isToday && completion;
                       
                       return (
@@ -535,7 +469,7 @@ export default function HabitRecordsScreen() {
                         <LineChart 
                           dates={tableData.dates.slice().reverse()}
                           userData={selectedUser}
-                          habit={habit}
+                          arena={arena}
                           formatValue={formatValue}
                           formatDate={formatDate}
                         />
@@ -553,7 +487,7 @@ export default function HabitRecordsScreen() {
                       </Text>
                     </View>
                     
-                    {habit?.unit_type === 'number' && (
+                    {arena?.unit_type === 'number' && (
                       <View style={styles.statBox}>
                         <Text variant="titleMedium">
                           {(Object.values(selectedUser.completions)
@@ -563,7 +497,7 @@ export default function HabitRecordsScreen() {
                           ).toFixed(1)}
                         </Text>
                         <Text variant="bodySmall" style={styles.statLabel}>
-                          Average {habit.unit_label}
+                          Average {arena.unit_label}
                         </Text>
                       </View>
                     )}
@@ -599,12 +533,12 @@ const styles = StyleSheet.create({
     margin: 16,
     marginBottom: 8,
   },
-  habitTitle: {
+  arenaTitle: {
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 8,
   },
-  habitDescription: {
+  arenaDescription: {
     textAlign: 'center',
     color: '#666',
     marginBottom: 16,
@@ -627,10 +561,6 @@ const styles = StyleSheet.create({
   tableCard: {
     margin: 16,
     marginTop: 8,
-  },
-  table: {
-    minWidth: 800, // Increased to ensure all columns fit
-    width: 'auto',
   },
   customTable: {
     backgroundColor: 'white',

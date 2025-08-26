@@ -1,5 +1,5 @@
 import { useAuth } from "@/lib/auth-context";
-import { useCreateHabit } from "@/lib/queries";
+import { useCreateArena } from "@/lib/queries";
 import { UnitType } from "@/types/database.type";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -25,7 +25,7 @@ const UNIT_TYPES: { value: UnitType; label: string; description: string }[] = [
   { value: "text", label: "Text", description: "notes, description" },
 ];
 
-export default function AddHabitScreen() {
+export default function AddArenaScreen() {
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
   const [frequency, setFrequency] = useState<Frequency>("daily");
@@ -37,18 +37,18 @@ export default function AddHabitScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const theme = useTheme();
-  const createHabit = useCreateHabit();
+  const createArena = useCreateArena();
 
   const handleSubmit = async () => {
     if (!user) return;
 
     try {
-      await createHabit.mutateAsync({
+      await createArena.mutateAsync({
         created_by: user.$id,
         title,
         description,
         frequency,
-        is_public: true, // All habits are public by default
+        is_public: true, // All arenas are public by default
         unit_type: unitType,
         unit_label: unitLabel || undefined,
         target_value: targetValue || undefined,
@@ -62,7 +62,7 @@ export default function AddHabitScreen() {
         return;
       }
 
-      setError("There was an error creating the habit");
+      setError("There was an error creating the arena");
     }
   };
 
@@ -147,11 +147,11 @@ export default function AddHabitScreen() {
       <Button
         mode="contained"
         onPress={handleSubmit}
-        disabled={!title || !description || createHabit.isPending}
-        loading={createHabit.isPending}
+        disabled={!title || !description || createArena.isPending}
+        loading={createArena.isPending}
         style={styles.submitButton}
       >
-        Add Habit
+        Add Arena
       </Button>
       {error && <Text style={{ color: theme.colors.error }}>{error}</Text>}
     </SafeAreaView>
