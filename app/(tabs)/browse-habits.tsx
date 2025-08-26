@@ -2,6 +2,8 @@ import React, { useState, useMemo } from "react";
 import { StyleSheet, View, FlatList } from "react-native";
 import { Card, Text, Button, Chip, Searchbar } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AppHeader } from "../components/AppHeader";
+import { GradientBackground } from "../components/GradientBackground";
 import { useAuth } from "@/lib/auth-context";
 import { useAllHabitsForBrowsing, useJoinHabit } from "@/lib/queries";
 import { Habit } from "@/types/database.type";
@@ -134,25 +136,25 @@ export default function BrowseArenasScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text variant="headlineSmall" style={styles.title}>
-          Browse Arenas
-        </Text>
-        <Text variant="bodyMedium" style={styles.subtitle}>
-          Join arenas created by other users
-        </Text>
-        
-        <Searchbar
-          placeholder="Search arenas..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={styles.searchbar}
-          inputStyle={styles.searchInput}
-          icon="magnify"
-          clearIcon="close"
-        />
-      </View>
+    <GradientBackground>
+      <SafeAreaView style={styles.container}>
+      <AppHeader title="Browse Arenas" />
+      <View style={styles.content}>
+        <View style={styles.searchSection}>
+          <Text variant="bodyMedium" style={styles.subtitle}>
+            Join arenas created by other users
+          </Text>
+          
+          <Searchbar
+            placeholder="Search arenas..."
+            onChangeText={setSearchQuery}
+            value={searchQuery}
+            style={styles.searchbar}
+            inputStyle={styles.searchInput}
+            icon="magnify"
+            clearIcon="close"
+          />
+        </View>
 
       {allArenas.length === 0 ? (
         <View style={styles.centerContainer}>
@@ -182,24 +184,25 @@ export default function BrowseArenasScreen() {
           extraData={filteredArenas.length}
         />
       )}
-    </SafeAreaView>
+      </View>
+      </SafeAreaView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "transparent",
   },
-  header: {
+  content: {
+    flex: 1,
+  },
+  searchSection: {
     padding: 16,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
-  },
-  title: {
-    fontWeight: "bold",
-    marginBottom: 4,
   },
   subtitle: {
     color: "#666",

@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import {
   client,
   COMPLETIONS_COLLECTION_ID,
@@ -8,12 +9,13 @@ import {
 } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
 import { Arena, ArenaCompletion } from "@/types/database.type";
-import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Query } from "react-native-appwrite";
 import { ScrollView } from "react-native-gesture-handler";
 import { Card, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AppHeader } from "../components/AppHeader";
+import { GradientBackground } from "../components/GradientBackground";
 
 export default function StreaksScreen() {
   const [arenas, setArenas] = useState<Arena[]>([]);
@@ -158,10 +160,10 @@ export default function StreaksScreen() {
 
   const badgeStyles = [styles.badge1, styles.badge2, styles.badge3];
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title} variant="headlineSmall">
-        Arena Streaks
-      </Text>
+    <GradientBackground>
+      <SafeAreaView style={styles.container}>
+      <AppHeader title="Arena Streaks" />
+      <View style={styles.content}>
 
       {rankedArenas.length > 0 && (
         <View style={styles.rankingContainer}>
@@ -216,19 +218,20 @@ export default function StreaksScreen() {
           ))}
         </ScrollView>
       )}
-    </SafeAreaView>
+      </View>
+      </SafeAreaView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-    paddingHorizontal: 16,
+    backgroundColor: "transparent",
   },
-  title: {
-    fontWeight: "bold",
-    marginBottom: 16,
+  content: {
+    flex: 1,
+    paddingHorizontal: 16,
   },
   card: {
     marginBottom: 18,

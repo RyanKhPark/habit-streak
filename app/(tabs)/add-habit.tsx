@@ -1,8 +1,8 @@
+import React, { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
-import { useCreateArena } from "@/lib/queries";
+import { useCreateHabit } from "@/lib/queries";
 import { UnitType } from "@/types/database.type";
 import { useRouter } from "expo-router";
-import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import {
   Button,
@@ -14,6 +14,8 @@ import {
   Chip,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AppHeader } from "../components/AppHeader";
+import { GradientBackground } from "../components/GradientBackground";
 
 const FREQUENCIES = ["daily", "weekly", "monthly"];
 type Frequency = (typeof FREQUENCIES)[number];
@@ -37,13 +39,13 @@ export default function AddArenaScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const theme = useTheme();
-  const createArena = useCreateArena();
+  const createHabit = useCreateHabit();
 
   const handleSubmit = async () => {
     if (!user) return;
 
     try {
-      await createArena.mutateAsync({
+      await createHabit.mutateAsync({
         created_by: user.$id,
         title,
         description,
@@ -67,7 +69,10 @@ export default function AddArenaScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <GradientBackground>
+      <SafeAreaView style={styles.container}>
+      <AppHeader title="Add Arena" />
+      <View style={styles.content}>
       <TextInput
         label="Title"
         mode="outlined"
@@ -147,21 +152,26 @@ export default function AddArenaScreen() {
       <Button
         mode="contained"
         onPress={handleSubmit}
-        disabled={!title || !description || createArena.isPending}
-        loading={createArena.isPending}
+        disabled={!title || !description || createHabit.isPending}
+        loading={createHabit.isPending}
         style={styles.submitButton}
       >
         Add Arena
       </Button>
       {error && <Text style={{ color: theme.colors.error }}>{error}</Text>}
-    </SafeAreaView>
+      </View>
+      </SafeAreaView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "transparent",
+  },
+  content: {
+    flex: 1,
     paddingHorizontal: 16,
   },
 
