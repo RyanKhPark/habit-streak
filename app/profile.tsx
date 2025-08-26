@@ -2,8 +2,9 @@ import { useAuth } from "@/lib/auth-context";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
+import { Stack } from "expo-router";
 import React, { useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, View, TouchableOpacity } from "react-native";
 import {
   Avatar,
   Button,
@@ -82,20 +83,26 @@ export default function ProfileScreen() {
   };
 
   return (
-    <GradientBackground>
-      <SafeAreaView style={styles.safeArea}>
-        {/* <View style={styles.header}>
-          <IconButton
-            icon="arrow-left"
-            size={24}
-            onPress={() => router.back()}
-          />
-          <Text variant="titleLarge" style={styles.headerTitle}>
-            Profile
-          </Text>
-          <View style={{ width: 48 }} />
-        </View> */}
-
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <GradientBackground>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.customHeader}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => router.back()}
+            >
+              <MaterialCommunityIcons 
+                name="arrow-left" 
+                size={24} 
+                color="#2d2d2d" 
+              />
+            </TouchableOpacity>
+            <Text variant="titleLarge" style={styles.headerTitle}>
+              Profile
+            </Text>
+            <View style={styles.headerSpacer} />
+          </View>
         <ScrollView style={styles.container}>
           {/* Profile Header */}
           <Card style={styles.headerCard}>
@@ -271,8 +278,9 @@ export default function ProfileScreen() {
             </Text>
           </View>
         </ScrollView>
-      </SafeAreaView>
-    </GradientBackground>
+        </SafeAreaView>
+      </GradientBackground>
+    </>
   );
 }
 
@@ -281,16 +289,33 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "transparent",
   },
-  header: {
+  customHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 8,
-    paddingBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 8,
+  },
+  backButton: {
+    padding: 8,
   },
   headerTitle: {
     fontWeight: "600",
     color: "#2d2d2d",
+    flex: 1,
+    textAlign: "center",
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 0,
+    paddingBottom: 8,
   },
   container: {
     flex: 1,
