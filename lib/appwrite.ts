@@ -9,14 +9,17 @@ export const account = new Account(client);
 export const databases = new Databases(client);
 
 export const DATABASE_ID = process.env.EXPO_PUBLIC_DB_ID!;
+// Legacy collection IDs for backward compatibility
 export const HABITS_COLLECTION_ID =
+  process.env.EXPO_PUBLIC_HABITS_COLLECTION_ID!;
+// New arena collection IDs
+export const ARENAS_COLLECTION_ID =
   process.env.EXPO_PUBLIC_HABITS_COLLECTION_ID!;
 export const COMPLETIONS_COLLECTION_ID =
   process.env.EXPO_PUBLIC_COMPLETIONS_COLLECTION_ID!;
 export const PARTICIPANTS_COLLECTION_ID =
   process.env.EXPO_PUBLIC_PARTICIPANTS_COLLECTION_ID!;
-export const USERS_COLLECTION_ID =
-  process.env.EXPO_PUBLIC_USERS_COLLECTION_ID!;
+export const USERS_COLLECTION_ID = process.env.EXPO_PUBLIC_USERS_COLLECTION_ID!;
 export interface RealtimeResponse {
   events: string[];
   payload: any;

@@ -7,7 +7,7 @@ import {
   RealtimeResponse,
 } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
-import { Habit, HabitCompletion } from "@/types/database.type";
+import { Arena, ArenaCompletion } from "@/types/database.type";
 import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Query } from "react-native-appwrite";
@@ -16,34 +16,34 @@ import { Card, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function StreaksScreen() {
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [completedHabits, setCompletedHabits] = useState<HabitCompletion[]>([]);
+  const [arenas, setArenas] = useState<Arena[]>([]);
+  const [completedArenas, setCompletedArenas] = useState<ArenaCompletion[]>([]);
   const { user } = useAuth();
 
   useEffect(() => {
     if (user) {
-      const habitsChannel = `databases.${DATABASE_ID}.collections.${HABITS_COLLECTION_ID}.documents`;
-      const habitsSubscription = client.subscribe(
-        habitsChannel,
+      const arenasChannel = `databases.${DATABASE_ID}.collections.${HABITS_COLLECTION_ID}.documents`;
+      const arenasSubscription = client.subscribe(
+        arenasChannel,
         (response: RealtimeResponse) => {
           if (
             response.events.includes(
               "databases.*.collections.*.documents.*.create"
             )
           ) {
-            fetchHabits();
+            fetchArenas();
           } else if (
             response.events.includes(
               "databases.*.collections.*.documents.*.update"
             )
           ) {
-            fetchHabits();
+            fetchArenas();
           } else if (
             response.events.includes(
               "databases.*.collections.*.documents.*.delete"
             )
           ) {
-            fetchHabits();
+            fetchArenas();
           }
         }
       );
@@ -66,20 +66,20 @@ export default function StreaksScreen() {
       fetchCompletions();
 
       return () => {
-        habitsSubscription();
+        arenasSubscription();
         completionsSubscription();
       };
     }
   }, [user]);
 
-  const fetchHabits = async () => {
+  const fetchArenas = async () => {
     try {
       const response = await databases.listDocuments(
         DATABASE_ID,
         HABITS_COLLECTION_ID,
         [Query.equal("user_id", user?.$id ?? "")]
       );
-      setHabits(response.documents as Habit[]);
+      setArenas(response.documents as Arena[]);
     } catch (error) {
       console.error(error);
     }
@@ -92,8 +92,8 @@ export default function StreaksScreen() {
         COMPLETIONS_COLLECTION_ID,
         [Query.equal("user_id", user?.$id ?? "")]
       );
-      const completions = response.documents as HabitCompletion[];
-      setCompletedHabits(completions);
+      const completions = response.documents as ArenaCompletion[];
+      setCompletedArenas(completions);
     } catch (error) {
       console.error(error);
     }
@@ -105,28 +105,28 @@ export default function StreaksScreen() {
     total: number;
   }
 
-  const getStreakData = (habitId: string): StreakData => {
-    const habitCompletions = completedHabits
-      ?.filter((c) => c.habit_id === habitId)
+  const getStreakData = (arenaId: string): StreakData => {
+    const arenaCompletions = completedArenas
+      ?.filter((c) => c.arena_id === arenaId)
       .sort(
         (a, b) =>
           new Date(a.completed_at).getTime() -
           new Date(b.completed_at).getTime()
       );
 
-    if (habitCompletions?.length === 0) {
+    if (arenaCompletions?.length === 0) {
       return { streak: 0, bestStreak: 0, total: 0 };
     }
 
     // build streak data
     let streak = 0;
     let bestStreak = 0;
-    let total = habitCompletions.length;
+    let total = arenaCompletions.length;
 
     let lastDate: Date | null = null;
     let currentStreak = 0;
 
-    habitCompletions?.forEach((c) => {
+    arenaCompletions?.forEach((c) => {
       const date = new Date(c.completed_at);
       if (lastDate) {
         const diff =
@@ -149,54 +149,54 @@ export default function StreaksScreen() {
     return { streak, bestStreak, total };
   };
 
-  const habitStreaks = habits.map((habit) => {
-    const { streak, bestStreak, total } = getStreakData(habit.$id);
-    return { habit, bestStreak, streak, total };
+  const arenaStreaks = arenas.map((arena) => {
+    const { streak, bestStreak, total } = getStreakData(arena.$id);
+    return { arena, bestStreak, streak, total };
   });
 
-  const rankedHabits = habitStreaks.sort((a, b) => b.bestStreak - a.bestStreak);
+  const rankedArenas = arenaStreaks.sort((a, b) => b.bestStreak - a.bestStreak);
 
   const badgeStyles = [styles.badge1, styles.badge2, styles.badge3];
   return (
     <SafeAreaView style={styles.container}>
       <Text style={styles.title} variant="headlineSmall">
-        Habit Streaks
+        Arena Streaks
       </Text>
 
-      {rankedHabits.length > 0 && (
+      {rankedArenas.length > 0 && (
         <View style={styles.rankingContainer}>
           <Text style={styles.rankingTitle}>🏅 Top Streaks</Text>
-          {rankedHabits.slice(0, 3).map((item, key) => (
+          {rankedArenas.slice(0, 3).map((item, key) => (
             <View key={key} style={styles.rankingRow}>
               <View style={[styles.rankingBadge, badgeStyles[key]]}>
                 <Text style={styles.rankingBadgeText}>{key + 1}</Text>
               </View>
-              <Text style={styles.rankingHabit}>{item.habit.title}</Text>
+              <Text style={styles.rankingArena}>{item.arena.title}</Text>
               <Text style={styles.rankingStreak}>{item.bestStreak}</Text>
             </View>
           ))}
         </View>
       )}
 
-      {habits.length === 0 ? (
+      {arenas.length === 0 ? (
         <View>
-          <Text>No Habits yet. Add your first Habit!</Text>
+          <Text>No Arenas yet. Add your first Arena!</Text>
         </View>
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
           style={styles.container}
         >
-          {rankedHabits.map(({ habit, streak, bestStreak, total }, key) => (
+          {rankedArenas.map(({ arena, streak, bestStreak, total }, key) => (
             <Card
               key={key}
               style={[styles.card, key === 0 && styles.firstCard]}
             >
               <Card.Content>
-                <Text variant="titleMedium" style={styles.habitTitle}>
-                  {habit.title}
+                <Text variant="titleMedium" style={styles.arenaTitle}>
+                  {arena.title}
                 </Text>
-                <Text style={styles.habitDescription}>{habit.description}</Text>
+                <Text style={styles.arenaDescription}>{arena.description}</Text>
                 <View style={styles.statsRow}>
                   <View style={styles.statBadge}>
                     <Text style={styles.statBadgeText}>🔥 {streak}</Text>
@@ -246,12 +246,12 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#7c4dff",
   },
-  habitTitle: {
+  arenaTitle: {
     fontWeight: "bold",
     fontSize: 18,
     marginBottom: 2,
   },
-  habitDescription: {
+  arenaDescription: {
     color: "#6c6c80",
     marginBottom: 8,
   },
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 
-  rankingHabit: {
+  rankingArena: {
     flex: 1,
     fontSize: 15,
     color: "#333",

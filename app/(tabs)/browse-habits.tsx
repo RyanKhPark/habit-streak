@@ -8,103 +8,103 @@ import { Habit } from "@/types/database.type";
 
 type HabitWithJoinStatus = Habit & { canJoin: boolean; isCreatedByUser: boolean; isJoinedByUser: boolean };
 
-export default function BrowseHabitsScreen() {
+export default function BrowseArenasScreen() {
   const { user } = useAuth();
-  const { data: allHabits = [], isLoading, error } = useAllHabitsForBrowsing(user?.$id ?? "");
-  const joinHabit = useJoinHabit();
+  const { data: allArenas = [], isLoading, error } = useAllHabitsForBrowsing(user?.$id ?? "");
+  const joinArena = useJoinHabit();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredHabits = useMemo(() => {
-    if (!searchQuery.trim()) return allHabits;
+  const filteredArenas = useMemo(() => {
+    if (!searchQuery.trim()) return allArenas;
     
     const query = searchQuery.toLowerCase();
-    return allHabits.filter(habit => 
-      habit.title.toLowerCase().includes(query) ||
-      habit.description.toLowerCase().includes(query) ||
-      habit.frequency.toLowerCase().includes(query) ||
-      (habit.unit_label && habit.unit_label.toLowerCase().includes(query)) ||
-      (habit.target_value && habit.target_value.toLowerCase().includes(query))
+    return allArenas.filter(arena => 
+      arena.title.toLowerCase().includes(query) ||
+      arena.description.toLowerCase().includes(query) ||
+      arena.frequency.toLowerCase().includes(query) ||
+      (arena.unit_label && arena.unit_label.toLowerCase().includes(query)) ||
+      (arena.target_value && arena.target_value.toLowerCase().includes(query))
     );
-  }, [allHabits, searchQuery]);
+  }, [allArenas, searchQuery]);
 
   // Debug logging
   React.useEffect(() => {
-    console.log("All habits count:", allHabits.length);
-    console.log("Filtered habits count:", filteredHabits.length);
-    if (error) console.log("Error loading habits:", error);
-  }, [allHabits, filteredHabits, error]);
+    console.log("All arenas count:", allArenas.length);
+    console.log("Filtered arenas count:", filteredArenas.length);
+    if (error) console.log("Error loading arenas:", error);
+  }, [allArenas, filteredArenas, error]);
 
-  const handleJoinHabit = async (habitId: string) => {
+  const handleJoinArena = async (arenaId: string) => {
     if (!user) return;
     
     try {
-      await joinHabit.mutateAsync({ habitId, userId: user.$id });
+      await joinArena.mutateAsync({ habitId: arenaId, userId: user.$id });
     } catch (error) {
-      console.error("Error joining habit:", error);
+      console.error("Error joining arena:", error);
     }
   };
 
-  const renderHabitCard = ({ item: habit }: { item: HabitWithJoinStatus }) => (
+  const renderArenaCard = ({ item: arena }: { item: HabitWithJoinStatus }) => (
     <Card style={styles.card}>
       <Card.Content>
         <View style={styles.cardHeader}>
-          <Text variant="titleMedium" style={styles.habitTitle}>
-            {habit.title}
+          <Text variant="titleMedium" style={styles.arenaTitle}>
+            {arena.title}
           </Text>
           <View style={styles.participantBadge}>
             <Text style={styles.participantCount}>
-              {habit.participant_count} joined
+              {arena.participant_count} joined
             </Text>
           </View>
         </View>
         
-        <Text variant="bodyMedium" style={styles.habitDescription}>
-          {habit.description}
+        <Text variant="bodyMedium" style={styles.arenaDescription}>
+          {arena.description}
         </Text>
         
-        <View style={styles.habitMeta}>
+        <View style={styles.arenaMeta}>
           <Chip style={styles.frequencyChip}>
-            {habit.frequency}
+            {arena.frequency}
           </Chip>
           
-          {habit.unit_type && habit.unit_type !== 'boolean' && (
+          {arena.unit_type && arena.unit_type !== 'boolean' && (
             <Chip style={styles.typeChip}>
-              {habit.unit_type === 'number' && `Track: ${habit.unit_label || 'numbers'}`}
-              {habit.unit_type === 'time' && 'Track: time'}
-              {habit.unit_type === 'text' && 'Track: notes'}
+              {arena.unit_type === 'number' && `Track: ${arena.unit_label || 'numbers'}`}
+              {arena.unit_type === 'time' && 'Track: time'}
+              {arena.unit_type === 'text' && 'Track: notes'}
             </Chip>
           )}
           
-          {habit.target_value && (
+          {arena.target_value && (
             <Chip style={styles.targetChip}>
-              Goal: {habit.target_value}
+              Goal: {arena.target_value}
             </Chip>
           )}
         </View>
         
         <View style={styles.creatorInfo}>
           <Text variant="bodySmall" style={styles.creatorText}>
-            {habit.isCreatedByUser ? (
+            {arena.isCreatedByUser ? (
               "Created by you"
             ) : (
-              `Created by User ${(habit.created_by || (habit as any).user_id || 'Unknown').slice(-4)}`
+              `Created by User ${(arena.created_by || (arena as any).user_id || 'Unknown').slice(-4)}`
             )}
           </Text>
         </View>
       </Card.Content>
       
       <Card.Actions>
-        {habit.canJoin ? (
+        {arena.canJoin ? (
           <Button
             mode="contained"
-            onPress={() => handleJoinHabit(habit.$id)}
-            loading={joinHabit.isPending}
-            disabled={joinHabit.isPending}
+            onPress={() => handleJoinArena(arena.$id)}
+            loading={joinArena.isPending}
+            disabled={joinArena.isPending}
             style={styles.joinButton}
           >
-            Join Habit
+            Join Arena
           </Button>
-        ) : habit.isJoinedByUser ? (
+        ) : arena.isJoinedByUser ? (
           <Button
             mode="outlined"
             disabled
@@ -112,13 +112,13 @@ export default function BrowseHabitsScreen() {
           >
             Already Joined
           </Button>
-        ) : habit.isCreatedByUser ? (
+        ) : arena.isCreatedByUser ? (
           <Button
             mode="outlined"
             disabled
-            style={styles.ownHabitButton}
+            style={styles.ownArenaButton}
           >
-            Your Habit
+            Your Arena
           </Button>
         ) : null}
       </Card.Actions>
@@ -128,7 +128,7 @@ export default function BrowseHabitsScreen() {
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <Text>Loading available habits...</Text>
+        <Text>Loading available arenas...</Text>
       </View>
     );
   }
@@ -137,14 +137,14 @@ export default function BrowseHabitsScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text variant="headlineSmall" style={styles.title}>
-          Browse Habits
+          Browse Arenas
         </Text>
         <Text variant="bodyMedium" style={styles.subtitle}>
-          Join habits created by other users
+          Join arenas created by other users
         </Text>
         
         <Searchbar
-          placeholder="Search habits..."
+          placeholder="Search arenas..."
           onChangeText={setSearchQuery}
           value={searchQuery}
           style={styles.searchbar}
@@ -154,19 +154,19 @@ export default function BrowseHabitsScreen() {
         />
       </View>
 
-      {allHabits.length === 0 ? (
+      {allArenas.length === 0 ? (
         <View style={styles.centerContainer}>
           <Text style={styles.emptyText}>
-            No habits found.
+            No arenas found.
           </Text>
           <Text style={styles.emptySubtext}>
-            Create your first habit to get started!
+            Create your first arena to get started!
           </Text>
         </View>
-      ) : filteredHabits.length === 0 ? (
+      ) : filteredArenas.length === 0 ? (
         <View style={styles.centerContainer}>
           <Text style={styles.emptyText}>
-            No habits match your search.
+            No arenas match your search.
           </Text>
           <Text style={styles.emptySubtext}>
             Try different keywords or clear your search.
@@ -174,12 +174,12 @@ export default function BrowseHabitsScreen() {
         </View>
       ) : (
         <FlatList
-          data={filteredHabits}
-          renderItem={renderHabitCard}
+          data={filteredArenas}
+          renderItem={renderArenaCard}
           keyExtractor={(item, index) => `${item.$id}-${index}`}
           contentContainerStyle={styles.listContainer}
           showsVerticalScrollIndicator={false}
-          extraData={filteredHabits.length}
+          extraData={filteredArenas.length}
         />
       )}
     </SafeAreaView>
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
-  habitTitle: {
+  arenaTitle: {
     fontWeight: "bold",
     flex: 1,
   },
@@ -256,11 +256,11 @@ const styles = StyleSheet.create({
     color: "#1976d2",
     fontWeight: "500",
   },
-  habitDescription: {
+  arenaDescription: {
     marginBottom: 12,
     color: "#666",
   },
-  habitMeta: {
+  arenaMeta: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     marginLeft: "auto",
     backgroundColor: "#e8f5e9",
   },
-  ownHabitButton: {
+  ownArenaButton: {
     marginLeft: "auto",
     backgroundColor: "#fff3e0",
   },

@@ -34,7 +34,7 @@ export default function ProfileScreen() {
 
   // Mock user stats - replace with real queries later
   const userStats = {
-    totalHabits: 12,
+    totalArenas: 12,
     activeStreaks: 5,
     longestStreak: 45,
     joinedDays: 127,
@@ -135,10 +135,10 @@ export default function ProfileScreen() {
             <View style={styles.statItem}>
               <MaterialCommunityIcons name="target" size={24} color="#7c4dff" />
               <Text variant="titleMedium" style={styles.statNumber}>
-                {userStats.totalHabits}
+                {userStats.totalArenas}
               </Text>
               <Text variant="bodySmall" style={styles.statLabel}>
-                Total Habits
+                Total Arenas
               </Text>
             </View>
             <View style={styles.statItem}>
@@ -281,7 +281,7 @@ export default function ProfileScreen() {
 
       <View style={styles.footer}>
         <Text variant="bodySmall" style={styles.footerText}>
-          Habit Tracker v1.0.0
+          Arena Tracker v1.0.0
         </Text>
       </View>
       </ScrollView>
