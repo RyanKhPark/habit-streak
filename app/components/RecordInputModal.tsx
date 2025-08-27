@@ -11,6 +11,7 @@ import {
 } from "react-native-paper";
 import { Habit } from "@/types/database.type";
 import { useRouter } from "expo-router";
+import { useTimeBasedTheme } from "../hooks/useTimeBasedTheme";
 
 interface RecordInputModalProps {
   visible: boolean;
@@ -32,6 +33,7 @@ export function RecordInputModal({
   const [textValue, setTextValue] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const theme = useTimeBasedTheme();
 
   const handleSubmit = async () => {
     if (!habit || isSubmitting) return;
@@ -115,7 +117,7 @@ export function RecordInputModal({
       case "number":
         return (
           <View style={styles.inputContainer}>
-            <Text variant="bodyMedium" style={styles.label}>
+            <Text variant="bodyMedium" style={[styles.label, { color: theme.primaryText }]}>
               How much did you complete?
             </Text>
             <TextInput
@@ -123,11 +125,25 @@ export function RecordInputModal({
               value={numberValue}
               onChangeText={setNumberValue}
               keyboardType="numeric"
-              mode="outlined"
+              mode="flat"
               style={styles.input}
+              textColor={theme.primaryText}
+              placeholderTextColor={theme.placeholderText}
+              underlineColor={theme.inputBorder}
+              activeUnderlineColor={theme.primaryButton}
+              theme={{
+                colors: {
+                  onSurfaceVariant: theme.primaryText,
+                  primary: theme.primaryButton,
+                  surfaceVariant: theme.inputBackground,
+                  background: theme.inputBackground,
+                  surface: theme.inputBackground,
+                  onSurface: theme.primaryText,
+                }
+              }}
             />
             {habit.target_value && (
-              <Text variant="bodySmall" style={styles.target}>
+              <Text variant="bodySmall" style={[styles.target, { color: theme.secondaryText }]}>
                 Target: {habit.target_value}
               </Text>
             )}
@@ -137,7 +153,7 @@ export function RecordInputModal({
       case "time":
         return (
           <View style={styles.inputContainer}>
-            <Text variant="bodyMedium" style={styles.label}>
+            <Text variant="bodyMedium" style={[styles.label, { color: theme.primaryText }]}>
               How long did you spend?
             </Text>
             <View style={styles.timeInputRow}>
@@ -146,20 +162,48 @@ export function RecordInputModal({
                 value={timeHours}
                 onChangeText={setTimeHours}
                 keyboardType="numeric"
-                mode="outlined"
+                mode="flat"
                 style={styles.timeInput}
+                textColor={theme.primaryText}
+                placeholderTextColor={theme.placeholderText}
+                underlineColor={theme.inputBorder}
+                activeUnderlineColor={theme.primaryButton}
+                theme={{
+                  colors: {
+                    onSurfaceVariant: theme.primaryText,
+                    primary: theme.primaryButton,
+                    surfaceVariant: theme.inputBackground,
+                    background: theme.inputBackground,
+                    surface: theme.inputBackground,
+                    onSurface: theme.primaryText,
+                  }
+                }}
               />
               <TextInput
                 label="Minutes"
                 value={timeMinutes}
                 onChangeText={setTimeMinutes}
                 keyboardType="numeric"
-                mode="outlined"
+                mode="flat"
                 style={styles.timeInput}
+                textColor={theme.primaryText}
+                placeholderTextColor={theme.placeholderText}
+                underlineColor={theme.inputBorder}
+                activeUnderlineColor={theme.primaryButton}
+                theme={{
+                  colors: {
+                    onSurfaceVariant: theme.primaryText,
+                    primary: theme.primaryButton,
+                    surfaceVariant: theme.inputBackground,
+                    background: theme.inputBackground,
+                    surface: theme.inputBackground,
+                    onSurface: theme.primaryText,
+                  }
+                }}
               />
             </View>
             {habit.target_value && (
-              <Text variant="bodySmall" style={styles.target}>
+              <Text variant="bodySmall" style={[styles.target, { color: theme.secondaryText }]}>
                 Target: {habit.target_value}
               </Text>
             )}
@@ -169,20 +213,22 @@ export function RecordInputModal({
       case "boolean":
         return (
           <View style={styles.inputContainer}>
-            <Text variant="bodyMedium" style={styles.label}>
+            <Text variant="bodyMedium" style={[styles.label, { color: theme.primaryText }]}>
               {habit.title}?
             </Text>
             <View style={styles.switchContainer}>
-              <Text variant="bodyMedium">No</Text>
+              <Text variant="bodyMedium" style={{ color: theme.secondaryText }}>No</Text>
               <Switch
                 value={booleanValue}
                 onValueChange={setBooleanValue}
                 style={styles.switch}
+                thumbColor={theme.primaryButton}
+                trackColor={{ true: theme.accentColor, false: theme.secondaryButton }}
               />
-              <Text variant="bodyMedium">Yes</Text>
+              <Text variant="bodyMedium" style={{ color: theme.secondaryText }}>Yes</Text>
             </View>
             {habit.target_value && (
-              <Text variant="bodySmall" style={styles.target}>
+              <Text variant="bodySmall" style={[styles.target, { color: theme.secondaryText }]}>
                 Target: {habit.target_value}
               </Text>
             )}
@@ -192,20 +238,34 @@ export function RecordInputModal({
       case "text":
         return (
           <View style={styles.inputContainer}>
-            <Text variant="bodyMedium" style={styles.label}>
+            <Text variant="bodyMedium" style={[styles.label, { color: theme.primaryText }]}>
               What did you accomplish?
             </Text>
             <TextInput
               label={habit.unit_label || "Description"}
               value={textValue}
               onChangeText={setTextValue}
-              mode="outlined"
+              mode="flat"
               multiline
               numberOfLines={3}
               style={styles.input}
+              textColor={theme.primaryText}
+              placeholderTextColor={theme.placeholderText}
+              underlineColor={theme.inputBorder}
+              activeUnderlineColor={theme.primaryButton}
+              theme={{
+                colors: {
+                  onSurfaceVariant: theme.primaryText,
+                  primary: theme.primaryButton,
+                  surfaceVariant: theme.inputBackground,
+                  background: theme.inputBackground,
+                  surface: theme.inputBackground,
+                  onSurface: theme.primaryText,
+                }
+              }}
             />
             {habit.target_value && (
-              <Text variant="bodySmall" style={styles.target}>
+              <Text variant="bodySmall" style={[styles.target, { color: theme.secondaryText }]}>
                 Target: {habit.target_value}
               </Text>
             )}
@@ -222,12 +282,12 @@ export function RecordInputModal({
   return (
     <Portal>
       <Modal visible={visible} onDismiss={onDismiss} contentContainerStyle={styles.modal}>
-        <Card>
+        <Card style={{ backgroundColor: theme.cardBackground, borderColor: theme.cardBorder, borderWidth: 1 }}>
           <Card.Content>
-            <Text variant="headlineSmall" style={styles.title}>
+            <Text variant="headlineSmall" style={[styles.title, { color: theme.primaryText }]}>
               Record Progress
             </Text>
-            <Text variant="bodyMedium" style={styles.habitTitle}>
+            <Text variant="bodyMedium" style={[styles.habitTitle, { color: theme.secondaryText }]}>
               {habit.title}
             </Text>
             
@@ -235,7 +295,11 @@ export function RecordInputModal({
           </Card.Content>
           
           <Card.Actions style={styles.actions}>
-            <Button onPress={onDismiss} disabled={isSubmitting}>
+            <Button 
+              onPress={onDismiss} 
+              disabled={isSubmitting}
+              textColor={theme.secondaryButtonText}
+            >
               Cancel
             </Button>
             <Button 
@@ -243,6 +307,8 @@ export function RecordInputModal({
               onPress={handleSubmit}
               loading={isSubmitting}
               disabled={isSubmitting}
+              buttonColor={theme.primaryButton}
+              textColor={theme.primaryButtonText}
             >
               Complete
             </Button>
@@ -274,6 +340,7 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 8,
+    borderRadius: 8,
   },
   timeInputRow: {
     flexDirection: "row",

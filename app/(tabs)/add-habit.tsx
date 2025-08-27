@@ -9,13 +9,13 @@ import {
   SegmentedButtons,
   Text,
   TextInput,
-  useTheme,
   Switch,
   Chip,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "../components/AppHeader";
 import { GradientBackground } from "../components/GradientBackground";
+import { useTimeBasedTheme } from "../hooks/useTimeBasedTheme";
 
 const FREQUENCIES = ["daily", "weekly", "monthly"];
 type Frequency = (typeof FREQUENCIES)[number];
@@ -38,7 +38,7 @@ export default function AddArenaScreen() {
   const [error, setError] = useState<string>("");
   const { user } = useAuth();
   const router = useRouter();
-  const theme = useTheme();
+  const timeTheme = useTimeBasedTheme();
   const createHabit = useCreateHabit();
 
   const handleSubmit = async () => {
@@ -75,21 +75,49 @@ export default function AddArenaScreen() {
       <View style={styles.content}>
       <TextInput
         label="Title"
-        mode="outlined"
+        mode="flat"
         value={title}
         onChangeText={setTitle}
         style={styles.input}
+        textColor={timeTheme.primaryText}
+        placeholderTextColor={timeTheme.placeholderText}
+        underlineColor={timeTheme.inputBorder}
+        activeUnderlineColor={timeTheme.primaryButton}
+        theme={{
+          colors: {
+            onSurfaceVariant: timeTheme.primaryText,
+            primary: timeTheme.primaryButton,
+            surfaceVariant: timeTheme.inputBackground,
+            background: timeTheme.inputBackground,
+            surface: timeTheme.inputBackground,
+            onSurface: timeTheme.primaryText,
+          }
+        }}
       />
       <TextInput
         label="Description"
-        mode="outlined"
+        mode="flat"
         value={description}
         onChangeText={setDescription}
         style={styles.input}
+        textColor={timeTheme.primaryText}
+        placeholderTextColor={timeTheme.placeholderText}
+        underlineColor={timeTheme.inputBorder}
+        activeUnderlineColor={timeTheme.primaryButton}
+        theme={{
+          colors: {
+            onSurfaceVariant: timeTheme.primaryText,
+            primary: timeTheme.primaryButton,
+            surfaceVariant: timeTheme.inputBackground,
+            background: timeTheme.inputBackground,
+            surface: timeTheme.inputBackground,
+            onSurface: timeTheme.primaryText,
+          }
+        }}
       />
       
       <View style={styles.frequencyContainer}>
-        <Text variant="titleMedium" style={styles.sectionTitle}>Frequency</Text>
+        <Text variant="titleMedium" style={[styles.sectionTitle, { color: timeTheme.primaryText }]}>Frequency</Text>
         <SegmentedButtons
           value={frequency}
           onValueChange={(value) => setFrequency(value as Frequency)}
@@ -101,7 +129,7 @@ export default function AddArenaScreen() {
       </View>
 
       <View style={styles.unitTypeContainer}>
-        <Text variant="titleMedium" style={styles.sectionTitle}>How to track progress?</Text>
+        <Text variant="titleMedium" style={[styles.sectionTitle, { color: timeTheme.primaryText }]}>How to track progress?</Text>
         <View style={styles.chipContainer}>
           {UNIT_TYPES.map((type) => (
             <Chip
@@ -117,7 +145,7 @@ export default function AddArenaScreen() {
             </Chip>
           ))}
         </View>
-        <Text variant="bodySmall" style={styles.unitDescription}>
+        <Text variant="bodySmall" style={[styles.unitDescription, { color: timeTheme.secondaryText }]}>
           {UNIT_TYPES.find(t => t.value === unitType)?.description}
         </Text>
       </View>
@@ -125,27 +153,57 @@ export default function AddArenaScreen() {
       {(unitType === 'number' || unitType === 'text') && (
         <TextInput
           label="Unit Label (e.g., km, pages, chapters)"
-          mode="outlined"
+          mode="flat"
           value={unitLabel}
           onChangeText={setUnitLabel}
           style={styles.input}
+          textColor={timeTheme.primaryText}
+          placeholderTextColor={timeTheme.placeholderText}
+          underlineColor={timeTheme.inputBorder}
+          activeUnderlineColor={timeTheme.primaryButton}
+          theme={{
+            colors: {
+              onSurfaceVariant: timeTheme.primaryText,
+              primary: timeTheme.primaryButton,
+              surfaceVariant: timeTheme.inputBackground,
+              background: timeTheme.inputBackground,
+              surface: timeTheme.inputBackground,
+              onSurface: timeTheme.primaryText,
+            }
+          }}
         />
       )}
 
       <TextInput
         label="Target Value (optional)"
-        mode="outlined"
+        mode="flat"
         value={targetValue}
         onChangeText={setTargetValue}
         placeholder={unitType === 'number' ? '5 km' : unitType === 'time' ? '30 minutes' : unitType === 'boolean' ? 'Yes' : 'Daily reflection'}
         style={styles.input}
+        textColor={timeTheme.primaryText}
+        placeholderTextColor={timeTheme.placeholderText}
+        underlineColor={timeTheme.inputBorder}
+        activeUnderlineColor={timeTheme.primaryButton}
+        theme={{
+          colors: {
+            onSurfaceVariant: timeTheme.primaryText,
+            primary: timeTheme.primaryButton,
+            surfaceVariant: timeTheme.inputBackground,
+            background: timeTheme.inputBackground,
+            surface: timeTheme.inputBackground,
+            onSurface: timeTheme.primaryText,
+          }
+        }}
       />
 
       <View style={styles.switchContainer}>
-        <Text variant="bodyMedium">Requires input when completing</Text>
+        <Text variant="bodyMedium" style={{ color: timeTheme.primaryText }}>Requires input when completing</Text>
         <Switch
           value={requiresInput}
           onValueChange={setRequiresInput}
+          thumbColor={timeTheme.primaryButton}
+          trackColor={{ true: timeTheme.accentColor, false: timeTheme.secondaryButton }}
         />
       </View>
       
@@ -155,10 +213,12 @@ export default function AddArenaScreen() {
         disabled={!title || !description || createHabit.isPending}
         loading={createHabit.isPending}
         style={styles.submitButton}
+        buttonColor={timeTheme.primaryButton}
+        textColor={timeTheme.primaryButtonText}
       >
         Add Arena
       </Button>
-      {error && <Text style={{ color: theme.colors.error }}>{error}</Text>}
+      {error && <Text style={{ color: timeTheme.errorColor }}>{error}</Text>}
       </View>
       </SafeAreaView>
     </GradientBackground>
@@ -177,6 +237,7 @@ const styles = StyleSheet.create({
 
   input: {
     marginBottom: 16,
+    borderRadius: 8,
   },
 
   frequencyContainer: {
@@ -205,7 +266,6 @@ const styles = StyleSheet.create({
   },
 
   unitDescription: {
-    color: '#666',
     fontStyle: 'italic',
   },
 

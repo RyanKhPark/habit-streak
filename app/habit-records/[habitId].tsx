@@ -16,6 +16,8 @@ import { useAuth } from '@/lib/auth-context';
 import { databases, DATABASE_ID, COMPLETIONS_COLLECTION_ID, HABITS_COLLECTION_ID } from '@/lib/appwrite';
 import { Query } from 'react-native-appwrite';
 import { Habit, HabitCompletion } from '@/types/database.type';
+import { GradientBackground } from '../components/GradientBackground';
+import { useTimeBasedTheme } from '../hooks/useTimeBasedTheme';
 
 interface TableData {
   dates: string[];
@@ -31,6 +33,7 @@ export default function HabitRecordsScreen() {
   const { habitId } = useLocalSearchParams<{ habitId: string }>();
   const { user } = useAuth();
   const router = useRouter();
+  const theme = useTimeBasedTheme();
   
   const [habit, setHabit] = useState<Habit | null>(null);
   const [tableData, setTableData] = useState<TableData>({ dates: [], users: [] });
@@ -337,24 +340,27 @@ export default function HabitRecordsScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
-        <Text style={styles.loadingText}>Loading records...</Text>
-      </View>
+      <GradientBackground>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={theme.primaryButton} />
+          <Text style={[styles.loadingText, { color: theme.primaryText }]}>Loading records...</Text>
+        </View>
+      </GradientBackground>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Card style={styles.headerCard}>
+    <GradientBackground>
+      <View style={styles.container}>
+      <Card style={[styles.headerCard, { backgroundColor: theme.cardBackground, borderColor: theme.cardBorder }]}>
         <Card.Content>
-          <Text variant="headlineSmall" style={styles.arenaTitle}>
+          <Text variant="headlineSmall" style={[styles.arenaTitle, { color: theme.primaryText }]}>
             {habit?.title}
           </Text>
-          <Text variant="bodyMedium" style={styles.arenaDescription}>
+          <Text variant="bodyMedium" style={[styles.arenaDescription, { color: theme.secondaryText }]}>
             {habit?.description}
           </Text>
-          <Text variant="bodySmall" style={styles.sharedInfo}>
+          <Text variant="bodySmall" style={[styles.sharedInfo, { color: theme.accentColor }]}>
             🌟 Shared with {tableData.users.length} participants
           </Text>
           
@@ -373,7 +379,7 @@ export default function HabitRecordsScreen() {
         </Card.Content>
       </Card>
 
-      <Card style={styles.tableCard}>
+      <Card style={[styles.tableCard, { backgroundColor: theme.cardBackground, borderColor: theme.cardBorder }]}>
         <Card.Content>
           <ScrollView 
             ref={scrollViewRef}
@@ -382,15 +388,15 @@ export default function HabitRecordsScreen() {
           >
             <View style={[styles.customTable, { minWidth: 150 + (tableData.dates.length * 80) }]}>
               {/* Custom Table Header */}
-              <View style={styles.customTableHeader}>
+              <View style={[styles.customTableHeader, { backgroundColor: theme.primaryButton }]}>
                 <View style={[styles.customHeaderCell, styles.userColumn]}>
-                  <Text variant="titleSmall" style={styles.headerText}>Member</Text>
+                  <Text variant="titleSmall" style={[styles.headerText, { color: theme.primaryButtonText }]}>Member</Text>
                 </View>
                 {tableData.dates.map((date) => {
                   const isToday = date === getTodayString();
                   return (
-                    <View key={`header-${date}`} style={[styles.customHeaderCell, styles.dateColumn, isToday && styles.todayColumn]}>
-                      <Text variant="bodySmall" style={[styles.headerText, isToday && styles.todayHeaderText]}>
+                    <View key={`header-${date}`} style={[styles.customHeaderCell, styles.dateColumn, isToday && { backgroundColor: theme.accentColor }]}>
+                      <Text variant="bodySmall" style={[styles.headerText, { color: theme.primaryText }, isToday && { color: theme.primaryButtonText }]}>
                         {formatDate(date)}
                       </Text>
                     </View>
@@ -404,16 +410,21 @@ export default function HabitRecordsScreen() {
                 return (
                   <View 
                     key={userData.user_id} 
-                    style={[styles.customTableRow, isCurrentUser && styles.currentUserRow]}
+                    style={[
+                      styles.customTableRow, 
+                      { backgroundColor: theme.surfaceBackground },
+                      isCurrentUser && { backgroundColor: theme.accentColor }
+                    ]}
                   >
                     <View style={[styles.customCell, styles.userColumn]}>
                       <View style={styles.userCell}>
                         <Avatar.Text 
                           size={24} 
                           label={userData.user_name.charAt(0).toUpperCase()}
-                          style={styles.smallAvatar}
+                          style={[styles.smallAvatar, { backgroundColor: theme.primaryButton }]}
+                          labelStyle={{ color: theme.primaryButtonText }}
                         />
-                        <Text variant="bodyMedium" style={styles.userNameText}>
+                        <Text variant="bodyMedium" style={[styles.userNameText, { color: isCurrentUser ? theme.primaryButtonText : theme.primaryText }]}>
                           {userData.user_name}{isCurrentUser && ' (You)'}
                         </Text>
                       </View>
@@ -424,13 +435,20 @@ export default function HabitRecordsScreen() {
                       const hasCompletedToday = isToday && completion;
                       
                       return (
-                        <View key={`${userData.user_id}-${date}`} style={[styles.customCell, styles.dateColumn, isToday && styles.todayColumn]}>
+                        <View key={`${userData.user_id}-${date}`} style={[
+                          styles.customCell, 
+                          styles.dateColumn, 
+                          isToday && { backgroundColor: theme.accentColor }
+                        ]}>
                           <View style={styles.cellContainer}>
-                            <Text variant="bodySmall" style={styles.cellValue}>
+                            <Text variant="bodySmall" style={[
+                              styles.cellValue, 
+                              { color: isToday ? theme.primaryButtonText : theme.primaryText }
+                            ]}>
                               {formatValue(completion) || '-'}
                             </Text>
                             {hasCompletedToday && (
-                              <View style={styles.todayDot} />
+                              <View style={[styles.todayDot, { backgroundColor: theme.successColor }]} />
                             )}
                           </View>
                         </View>
@@ -450,22 +468,23 @@ export default function HabitRecordsScreen() {
           onDismiss={() => setModalVisible(false)}
           contentContainerStyle={styles.modalContainer}
         >
-          <Card style={styles.modalCard}>
+          <Card style={[styles.modalCard, { backgroundColor: theme.cardBackground, borderColor: theme.cardBorder, borderWidth: 1 }]}>
             <Card.Content>
               <View style={styles.modalHeader}>
-                <Text variant="headlineSmall" style={styles.modalTitle}>
-                  {selectedUser?.user_name}'s Progress
+                <Text variant="headlineSmall" style={[styles.modalTitle, { color: theme.primaryText }]}>
+                  {selectedUser?.user_name}&apos;s Progress
                 </Text>
                 <IconButton
                   icon="close"
                   size={24}
                   onPress={() => setModalVisible(false)}
+                  iconColor={theme.primaryText}
                 />
               </View>
               
               {selectedUser && (
                 <View style={styles.progressContainer}>
-                  <Text variant="titleMedium" style={styles.progressTitle}>
+                  <Text variant="titleMedium" style={[styles.progressTitle, { color: theme.primaryText }]}>
                     Recent Activity
                   </Text>
                   
@@ -511,21 +530,28 @@ export default function HabitRecordsScreen() {
                 </View>
               )}
               
-              <Button mode="contained" onPress={() => setModalVisible(false)} style={styles.closeButton}>
+              <Button 
+                mode="contained" 
+                onPress={() => setModalVisible(false)} 
+                style={styles.closeButton}
+                buttonColor={theme.primaryButton}
+                textColor={theme.primaryButtonText}
+              >
                 Close
               </Button>
             </Card.Content>
           </Card>
         </Modal>
       </Portal>
-    </View>
+      </View>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'transparent',
   },
   loadingContainer: {
     flex: 1,
@@ -546,7 +572,6 @@ const styles = StyleSheet.create({
   },
   arenaDescription: {
     textAlign: 'center',
-    color: '#666',
     marginBottom: 16,
   },
   filterContainer: {
@@ -560,7 +585,6 @@ const styles = StyleSheet.create({
   },
   sharedInfo: {
     textAlign: 'center',
-    color: '#7c4dff',
     marginBottom: 12,
     fontWeight: '500',
   },
@@ -569,14 +593,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   customTable: {
-    backgroundColor: 'white',
     borderRadius: 8,
   },
   customTableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#f5f5f5',
     borderBottomWidth: 2,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: 'rgba(255,255,255,0.2)',
   },
   customHeaderCell: {
     paddingVertical: 12,
@@ -589,7 +611,7 @@ const styles = StyleSheet.create({
   customTableRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: 'rgba(255,255,255,0.1)',
     minHeight: 50,
   },
   customCell: {
@@ -598,7 +620,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRightWidth: 1,
-    borderRightColor: '#e0e0e0',
+    borderRightColor: 'rgba(255,255,255,0.1)',
   },
   userColumn: {
     flex: 2,
@@ -612,20 +634,16 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   currentUserRow: {
-    backgroundColor: '#f3e5f5',
   },
   headerText: {
     fontWeight: 'bold',
-    color: '#333',
   },
   todayColumn: {
-    backgroundColor: '#e8f5e8',
   },
   todayHeaderText: {
-    color: '#4caf50',
     fontWeight: 'bold',
   },
   userCell: {
@@ -651,7 +669,6 @@ const styles = StyleSheet.create({
   cellValue: {
     textAlign: 'center',
     fontWeight: '500',
-    color: '#333',
   },
   todayDot: {
     position: 'absolute',
@@ -660,7 +677,6 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#4caf50',
   },
   modalContainer: {
     flex: 1,
@@ -698,7 +714,6 @@ const styles = StyleSheet.create({
   },
   svgContainer: {
     position: 'relative',
-    backgroundColor: '#f9f9f9',
     borderRadius: 8,
     margin: 10,
   },

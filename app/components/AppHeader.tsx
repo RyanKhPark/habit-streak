@@ -4,6 +4,7 @@ import { Text, Avatar, Badge } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
+import { useTimeBasedTheme } from '../hooks/useTimeBasedTheme';
 
 interface AppHeaderProps {
   title: string;
@@ -12,15 +13,16 @@ interface AppHeaderProps {
 export function AppHeader({ title }: AppHeaderProps) {
   const router = useRouter();
   const { user } = useAuth();
+  const theme = useTimeBasedTheme();
 
   return (
     <View style={styles.header}>
       <TouchableOpacity style={styles.notificationButton}>
-        <MaterialCommunityIcons name="bell-outline" size={24} color="#333" />
-        <Badge size={8} style={styles.notificationBadge} />
+        <MaterialCommunityIcons name="bell-outline" size={24} color={theme.primaryText} />
+        <Badge size={8} style={[styles.notificationBadge, { backgroundColor: theme.errorColor }]} />
       </TouchableOpacity>
       
-      <Text variant="headlineSmall" style={styles.title}>
+      <Text variant="headlineSmall" style={[styles.title, { color: theme.headerText }]}>
         {title}
       </Text>
       
@@ -31,8 +33,8 @@ export function AppHeader({ title }: AppHeaderProps) {
         <Avatar.Text 
           size={40} 
           label={user?.name?.charAt(0) || 'H'} 
-          style={styles.userAvatar}
-          labelStyle={styles.avatarLabel}
+          style={[styles.userAvatar, { backgroundColor: theme.primaryButton }]}
+          labelStyle={[styles.avatarLabel, { color: theme.primaryButtonText }]}
         />
       </TouchableOpacity>
     </View>
@@ -56,11 +58,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: 6,
     right: 6,
-    backgroundColor: "#ff4757",
   },
   title: {
     fontWeight: "600",
-    color: "#2d2d2d",
     fontSize: 18,
     flex: 1,
     textAlign: "center",
@@ -70,10 +70,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   userAvatar: {
-    backgroundColor: "#e8e8e8",
   },
   avatarLabel: {
-    color: "#2d2d2d",
     fontWeight: "600",
     fontSize: 16,
   },
