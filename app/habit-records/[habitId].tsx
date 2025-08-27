@@ -13,26 +13,26 @@ import {
 } from 'react-native-paper';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
-import { databases, DATABASE_ID, COMPLETIONS_COLLECTION_ID, ARENAS_COLLECTION_ID } from '@/lib/appwrite';
+import { databases, DATABASE_ID, COMPLETIONS_COLLECTION_ID, HABITS_COLLECTION_ID } from '@/lib/appwrite';
 import { Query } from 'react-native-appwrite';
-import { Arena, ArenaCompletion, UserRecord } from '@/types/database.type';
+import { Habit, HabitCompletion } from '@/types/database.type';
 
 interface TableData {
   dates: string[];
   users: {
     user_id: string;
     user_name: string;
-    completions: { [date: string]: ArenaCompletion | null };
+    completions: { [date: string]: HabitCompletion | null };
     todayCompletionTime?: string;
   }[];
 }
 
-export default function ArenaRecordsScreen() {
-  const { arenaId } = useLocalSearchParams<{ arenaId: string }>();
+export default function HabitRecordsScreen() {
+  const { habitId } = useLocalSearchParams<{ habitId: string }>();
   const { user } = useAuth();
   const router = useRouter();
   
-  const [arena, setArena] = useState<Arena | null>(null);
+  const [habit, setHabit] = useState<Habit | null>(null);
   const [tableData, setTableData] = useState<TableData>({ dates: [], users: [] });
   const [loading, setLoading] = useState(true);
   const [timeFilter, setTimeFilter] = useState<'today' | 'week' | 'month' | 'all'>('week');
@@ -41,10 +41,10 @@ export default function ArenaRecordsScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
-    if (arenaId) {
-      fetchArenaRecords();
+    if (habitId) {
+      fetchHabitRecords();
     }
-  }, [arenaId, timeFilter]);
+  }, [habitId, timeFilter]);
 
   // Auto-scroll to show today's column (leftmost after reverse)
   useEffect(() => {
@@ -55,17 +55,17 @@ export default function ArenaRecordsScreen() {
     }
   }, [tableData.dates.length]);
 
-  const fetchArenaRecords = async () => {
+  const fetchHabitRecords = async () => {
     try {
       setLoading(true);
       
-      // Fetch arena details
-      const arenaResponse = await databases.getDocument(
+      // Fetch habit details
+      const habitResponse = await databases.getDocument(
         DATABASE_ID,
-        ARENAS_COLLECTION_ID,
-        arenaId!
+        HABITS_COLLECTION_ID,
+        habitId!
       );
-      setArena(arenaResponse as Arena);
+      setHabit(habitResponse as Habit);
 
       // Generate date range based on filter
       const today = new Date();
@@ -95,23 +95,23 @@ export default function ArenaRecordsScreen() {
         current.setDate(current.getDate() + 1);
       }
 
-      // Fetch ALL completions for this arena (no date filtering in query)
+      // Fetch ALL completions for this habit (no date filtering in query)
       const completionsResponse = await databases.listDocuments(
         DATABASE_ID,
         COMPLETIONS_COLLECTION_ID,
         [
-          Query.equal('arena_id', arenaId!),
+          Query.equal('habit_id', habitId!),
           Query.orderDesc('completed_at'),
           Query.limit(1000)
         ]
       );
 
-      const completions = completionsResponse.documents as ArenaCompletion[];
+      const completions = completionsResponse.documents as HabitCompletion[];
       
       // Group completions by user
       const userMap = new Map<string, {
         user_name: string;
-        completions: { [date: string]: ArenaCompletion };
+        completions: { [date: string]: HabitCompletion };
         todayCompletionTime?: string;
       }>();
       
@@ -139,8 +139,8 @@ export default function ArenaRecordsScreen() {
       });
 
       // Convert to array and sort by today's completion
-      const users = Array.from(userMap.values())
-        .map(user => ({ ...user, user_id: '' })) // Add missing user_id if needed
+      const users = Array.from(userMap.entries())
+        .map(([user_id, user]) => ({ ...user, user_id }))
         .sort((a, b) => {
           if (a.todayCompletionTime && b.todayCompletionTime) {
             return a.todayCompletionTime.localeCompare(b.todayCompletionTime);
@@ -153,13 +153,13 @@ export default function ArenaRecordsScreen() {
       setTableData({ dates: finalDates, users });
       
     } catch (error) {
-      console.error('Error fetching arena records:', error);
+      console.error('Error fetching habit records:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatValue = (completion: ArenaCompletion | null) => {
+  const formatValue = (completion: HabitCompletion | null) => {
     if (!completion) return '';
     return completion.display_value || completion.value || '✓';
   };
@@ -188,7 +188,13 @@ export default function ArenaRecordsScreen() {
     setModalVisible(true);
   };
 
-  const LineChart = ({ dates, userData, arena, formatValue, formatDate }) => {
+  const LineChart = ({ dates, userData, habit, formatValue, formatDate }: {
+    dates: string[];
+    userData: TableData['users'][0];
+    habit: Habit | null;
+    formatValue: (completion: HabitCompletion | null) => string;
+    formatDate: (dateStr: string) => string;
+  }) => {
     const chartWidth = Math.max(dates.length * 50, 300);
     const chartHeight = 120;
     const padding = { top: 20, right: 30, bottom: 40, left: 30 };
@@ -199,7 +205,7 @@ export default function ArenaRecordsScreen() {
     const dataPoints = dates.map((date, index) => {
       const completion = userData.completions[date];
       const value = completion ? 
-        (arena?.unit_type === 'number' ? parseFloat(completion.value || '0') : 1) : 0;
+        (habit?.unit_type === 'number' ? parseFloat(completion.value || '0') : 1) : 0;
       return { date, value, hasCompletion: !!completion, index };
     });
 
@@ -207,7 +213,7 @@ export default function ArenaRecordsScreen() {
     const allValues = tableData.users.flatMap(user => 
       Object.values(user.completions)
         .filter(c => c)
-        .map(c => arena?.unit_type === 'number' ? parseFloat(c!.value || '0') : 1)
+        .map(c => habit?.unit_type === 'number' ? parseFloat(c!.value || '0') : 1)
     );
     const maxValue = Math.max(...allValues, 1);
 
@@ -343,10 +349,10 @@ export default function ArenaRecordsScreen() {
       <Card style={styles.headerCard}>
         <Card.Content>
           <Text variant="headlineSmall" style={styles.arenaTitle}>
-            {arena?.title}
+            {habit?.title}
           </Text>
           <Text variant="bodyMedium" style={styles.arenaDescription}>
-            {arena?.description}
+            {habit?.description}
           </Text>
           <Text variant="bodySmall" style={styles.sharedInfo}>
             🌟 Shared with {tableData.users.length} participants
@@ -383,7 +389,7 @@ export default function ArenaRecordsScreen() {
                 {tableData.dates.map((date) => {
                   const isToday = date === getTodayString();
                   return (
-                    <View key={date} style={[styles.customHeaderCell, styles.dateColumn, isToday && styles.todayColumn]}>
+                    <View key={`header-${date}`} style={[styles.customHeaderCell, styles.dateColumn, isToday && styles.todayColumn]}>
                       <Text variant="bodySmall" style={[styles.headerText, isToday && styles.todayHeaderText]}>
                         {formatDate(date)}
                       </Text>
@@ -418,7 +424,7 @@ export default function ArenaRecordsScreen() {
                       const hasCompletedToday = isToday && completion;
                       
                       return (
-                        <View key={date} style={[styles.customCell, styles.dateColumn, isToday && styles.todayColumn]}>
+                        <View key={`${userData.user_id}-${date}`} style={[styles.customCell, styles.dateColumn, isToday && styles.todayColumn]}>
                           <View style={styles.cellContainer}>
                             <Text variant="bodySmall" style={styles.cellValue}>
                               {formatValue(completion) || '-'}
@@ -469,7 +475,7 @@ export default function ArenaRecordsScreen() {
                         <LineChart 
                           dates={tableData.dates.slice().reverse()}
                           userData={selectedUser}
-                          arena={arena}
+                          habit={habit}
                           formatValue={formatValue}
                           formatDate={formatDate}
                         />
@@ -487,7 +493,7 @@ export default function ArenaRecordsScreen() {
                       </Text>
                     </View>
                     
-                    {arena?.unit_type === 'number' && (
+                    {habit?.unit_type === 'number' && (
                       <View style={styles.statBox}>
                         <Text variant="titleMedium">
                           {(Object.values(selectedUser.completions)
@@ -497,7 +503,7 @@ export default function ArenaRecordsScreen() {
                           ).toFixed(1)}
                         </Text>
                         <Text variant="bodySmall" style={styles.statLabel}>
-                          Average {arena.unit_label}
+                          Average {habit.unit_label}
                         </Text>
                       </View>
                     )}
