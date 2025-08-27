@@ -5,6 +5,7 @@ import { StyleSheet, View } from "react-native";
 import { Swipeable } from "react-native-gesture-handler";
 import { Text } from "react-native-paper";
 import { HabitCard } from "./HabitCard";
+import { useTimeBasedTheme } from "../hooks/useTimeBasedTheme";
 
 interface SwipeableHabitProps {
   habit: Habit;
@@ -22,27 +23,28 @@ export function SwipeableHabit({
   lastCompletion,
 }: SwipeableHabitProps) {
   const swipeableRef = useRef<Swipeable | null>(null);
+  const theme = useTimeBasedTheme();
 
   const renderRightActions = () => (
-    <View style={styles.swipeActionRight}>
+    <View style={[styles.swipeActionRight, { backgroundColor: theme.completionColor }]}>
       {isCompleted ? (
-        <Text style={{ color: "#fff" }}>Completed!</Text>
+        <Text style={{ color: theme.primaryButtonText }}>Completed!</Text>
       ) : (
         <MaterialCommunityIcons
           name="check-circle-outline"
           size={32}
-          color={"#fff"}
+          color={theme.primaryButtonText}
         />
       )}
     </View>
   );
 
   const renderLeftActions = () => (
-    <View style={styles.swipeActionLeft}>
+    <View style={[styles.swipeActionLeft, { backgroundColor: theme.errorColor }]}>
       <MaterialCommunityIcons
         name="trash-can-outline"
         size={32}
-        color={"#fff"}
+        color={theme.primaryButtonText}
       />
     </View>
   );
@@ -73,7 +75,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "flex-start",
     flex: 1,
-    backgroundColor: "#ff6b6b",
     borderRadius: 16,
     marginBottom: 16,
     marginTop: 0,
@@ -83,7 +84,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "flex-end",
     flex: 1,
-    backgroundColor: "#51cf66",
     borderRadius: 16,
     marginBottom: 16,
     marginTop: 0,

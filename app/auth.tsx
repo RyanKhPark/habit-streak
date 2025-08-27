@@ -2,15 +2,16 @@ import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
-import { Button, Text, TextInput, useTheme } from "react-native-paper";
+import { Button, Text, TextInput } from "react-native-paper";
+import { GradientBackground } from "./components/GradientBackground";
+import { useTimeBasedTheme } from "./hooks/useTimeBasedTheme";
 
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>("");
-
-  const theme = useTheme();
+  const timeTheme = useTimeBasedTheme();
   const router = useRouter();
 
   const { signIn, signUp } = useAuth();
@@ -50,12 +51,13 @@ export default function AuthScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
+    <GradientBackground>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+      >
       <View style={styles.content}>
-        <Text style={styles.title} variant="headlineMedium">
+        <Text style={[styles.title, { color: timeTheme.primaryText }]} variant="headlineMedium">
           {" "}
           {isSignUp ? "Create Account" : "Welcome Back"}
         </Text>
@@ -65,23 +67,57 @@ export default function AuthScreen() {
           autoCapitalize="none"
           keyboardType="email-address"
           placeholder="example@gmail.com"
-          mode="outlined"
+          mode="flat"
           style={styles.input}
           onChangeText={setEmail}
+          textColor={timeTheme.primaryText}
+          placeholderTextColor={timeTheme.placeholderText}
+          underlineColor={timeTheme.inputBorder}
+          activeUnderlineColor={timeTheme.primaryButton}
+          theme={{
+            colors: {
+              onSurfaceVariant: timeTheme.primaryText,
+              primary: timeTheme.primaryButton,
+              surfaceVariant: timeTheme.inputBackground,
+              background: timeTheme.inputBackground,
+              surface: timeTheme.inputBackground,
+              onSurface: timeTheme.primaryText,
+            }
+          }}
         />
 
         <TextInput
           label="Password"
           autoCapitalize="none"
-          mode="outlined"
+          mode="flat"
           secureTextEntry
           style={styles.input}
           onChangeText={setPassword}
+          textColor={timeTheme.primaryText}
+          placeholderTextColor={timeTheme.placeholderText}
+          underlineColor={timeTheme.inputBorder}
+          activeUnderlineColor={timeTheme.primaryButton}
+          theme={{
+            colors: {
+              onSurfaceVariant: timeTheme.primaryText,
+              primary: timeTheme.primaryButton,
+              surfaceVariant: timeTheme.inputBackground,
+              background: timeTheme.inputBackground,
+              surface: timeTheme.inputBackground,
+              onSurface: timeTheme.primaryText,
+            }
+          }}
         />
 
-        {error && <Text style={{ color: theme.colors.error }}> {error}</Text>}
+        {error && <Text style={{ color: timeTheme.errorColor }}> {error}</Text>}
 
-        <Button mode="contained" style={styles.button} onPress={handleAuth}>
+        <Button 
+          mode="contained" 
+          style={styles.button} 
+          onPress={handleAuth}
+          buttonColor={timeTheme.primaryButton}
+          textColor={timeTheme.primaryButtonText}
+        >
           {isSignUp ? "Sign Up" : "Sign In"}
         </Button>
 
@@ -89,20 +125,22 @@ export default function AuthScreen() {
           mode="text"
           onPress={handleSwitchMode}
           style={styles.switchModeButton}
+          textColor={timeTheme.secondaryButtonText}
         >
           {isSignUp
             ? "Already have an account? Sign In"
             : "Don't have an account? Sign Up"}
         </Button>
       </View>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "transparent",
   },
   content: {
     flex: 1,
@@ -115,6 +153,7 @@ const styles = StyleSheet.create({
   },
   input: {
     marginBottom: 16,
+    borderRadius: 8,
   },
   button: {
     marginTop: 8,

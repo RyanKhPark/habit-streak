@@ -17,10 +17,12 @@ import {
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GradientBackground } from "./components/GradientBackground";
+import { useTimeBasedTheme } from "./hooks/useTimeBasedTheme";
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
   const router = useRouter();
+  const theme = useTimeBasedTheme();
   const [profileImage, setProfileImage] = useState<string | null>(null);
   const [notifications, setNotifications] = useState(true);
   const [privateProfile, setPrivateProfile] = useState(false);
@@ -95,17 +97,17 @@ export default function ProfileScreen() {
               <MaterialCommunityIcons 
                 name="arrow-left" 
                 size={24} 
-                color="#2d2d2d" 
+                color={theme.primaryText} 
               />
             </TouchableOpacity>
-            <Text variant="titleLarge" style={styles.headerTitle}>
+            <Text variant="titleLarge" style={[styles.headerTitle, { color: theme.headerText }]}>
               Profile
             </Text>
             <View style={styles.headerSpacer} />
           </View>
         <ScrollView style={styles.container}>
           {/* Profile Header */}
-          <Card style={styles.headerCard}>
+          <Card style={[styles.headerCard, { backgroundColor: theme.cardBackground, borderColor: theme.cardBorder }]}>
             <Card.Content style={styles.headerContent}>
               <View style={styles.profileImageContainer}>
                 <Avatar.Image
@@ -131,19 +133,19 @@ export default function ProfileScreen() {
               </View>
 
               <View style={styles.profileInfo}>
-                <Text variant="headlineSmall" style={styles.userName}>
+                <Text variant="headlineSmall" style={[styles.userName, { color: theme.primaryText }]}>
                   {user?.name || "User"}
                 </Text>
-                <Text variant="bodyMedium" style={styles.userEmail}>
+                <Text variant="bodyMedium" style={[styles.userEmail, { color: theme.secondaryText }]}>
                   {user?.email}
                 </Text>
                 <View style={styles.joinedInfo}>
                   <MaterialCommunityIcons
                     name="calendar"
                     size={16}
-                    color="#666"
+                    color={theme.secondaryText}
                   />
-                  <Text variant="bodySmall" style={styles.joinedText}>
+                  <Text variant="bodySmall" style={[styles.joinedText, { color: theme.secondaryText }]}>
                     Joined {userStats.joinedDays} days ago
                   </Text>
                 </View>
@@ -153,6 +155,8 @@ export default function ProfileScreen() {
                 mode="outlined"
                 onPress={handleEditProfile}
                 style={styles.editButton}
+                buttonColor={theme.secondaryButton}
+                textColor={theme.secondaryButtonText}
               >
                 Edit Profile
               </Button>
@@ -160,9 +164,9 @@ export default function ProfileScreen() {
           </Card>
 
           {/* Stats Overview */}
-          <Card style={styles.statsCard}>
+          <Card style={[styles.statsCard, { backgroundColor: theme.cardBackground, borderColor: theme.cardBorder }]}>
             <Card.Content>
-              <Text variant="titleMedium" style={styles.sectionTitle}>
+              <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.primaryText }]}>
                 Your Progress
               </Text>
               <View style={styles.statsGrid}>
@@ -170,12 +174,12 @@ export default function ProfileScreen() {
                   <MaterialCommunityIcons
                     name="target"
                     size={24}
-                    color="#7c4dff"
+                    color={theme.accentColor}
                   />
-                  <Text variant="titleMedium" style={styles.statNumber}>
+                  <Text variant="titleMedium" style={[styles.statNumber, { color: theme.primaryText }]}>
                     {userStats.totalArenas}
                   </Text>
-                  <Text variant="bodySmall" style={styles.statLabel}>
+                  <Text variant="bodySmall" style={[styles.statLabel, { color: theme.secondaryText }]}>
                     Total Arenas
                   </Text>
                 </View>
@@ -183,12 +187,12 @@ export default function ProfileScreen() {
                   <MaterialCommunityIcons
                     name="fire"
                     size={24}
-                    color="#ff9800"
+                    color={theme.streakColor}
                   />
-                  <Text variant="titleMedium" style={styles.statNumber}>
+                  <Text variant="titleMedium" style={[styles.statNumber, { color: theme.primaryText }]}>
                     {userStats.activeStreaks}
                   </Text>
-                  <Text variant="bodySmall" style={styles.statLabel}>
+                  <Text variant="bodySmall" style={[styles.statLabel, { color: theme.secondaryText }]}>
                     Active Streaks
                   </Text>
                 </View>
@@ -196,12 +200,12 @@ export default function ProfileScreen() {
                   <MaterialCommunityIcons
                     name="trophy"
                     size={24}
-                    color="#4caf50"
+                    color={theme.successColor}
                   />
-                  <Text variant="titleMedium" style={styles.statNumber}>
+                  <Text variant="titleMedium" style={[styles.statNumber, { color: theme.primaryText }]}>
                     {userStats.longestStreak}
                   </Text>
-                  <Text variant="bodySmall" style={styles.statLabel}>
+                  <Text variant="bodySmall" style={[styles.statLabel, { color: theme.secondaryText }]}>
                     Best Streak
                   </Text>
                 </View>
@@ -210,20 +214,24 @@ export default function ProfileScreen() {
           </Card>
 
           {/* Settings */}
-          <Card style={styles.settingsCard}>
+          <Card style={[styles.settingsCard, { backgroundColor: theme.cardBackground, borderColor: theme.cardBorder }]}>
             <Card.Content>
-              <Text variant="titleMedium" style={styles.sectionTitle}>
+              <Text variant="titleMedium" style={[styles.sectionTitle, { color: theme.primaryText }]}>
                 Settings
               </Text>
 
               <List.Item
                 title="Push Notifications"
                 description="Get reminders and updates"
-                left={(props) => <List.Icon {...props} icon="bell" />}
+                titleStyle={{ color: theme.primaryText }}
+                descriptionStyle={{ color: theme.secondaryText }}
+                left={(props) => <List.Icon {...props} icon="bell" color={theme.primaryText} />}
                 right={() => (
                   <Switch
                     value={notifications}
                     onValueChange={setNotifications}
+                    thumbColor={theme.primaryButton}
+                    trackColor={{ true: theme.accentColor, false: theme.secondaryButton }}
                   />
                 )}
               />
@@ -233,11 +241,15 @@ export default function ProfileScreen() {
               <List.Item
                 title="Private Profile"
                 description="Hide your progress from others"
-                left={(props) => <List.Icon {...props} icon="lock" />}
+                titleStyle={{ color: theme.primaryText }}
+                descriptionStyle={{ color: theme.secondaryText }}
+                left={(props) => <List.Icon {...props} icon="lock" color={theme.primaryText} />}
                 right={() => (
                   <Switch
                     value={privateProfile}
                     onValueChange={setPrivateProfile}
+                    thumbColor={theme.primaryButton}
+                    trackColor={{ true: theme.accentColor, false: theme.secondaryButton }}
                   />
                 )}
               />
@@ -247,25 +259,27 @@ export default function ProfileScreen() {
               <List.Item
                 title="Help & Support"
                 description="Get help and contact support"
-                left={(props) => <List.Icon {...props} icon="help-circle" />}
-                right={(props) => <List.Icon {...props} icon="chevron-right" />}
+                titleStyle={{ color: theme.primaryText }}
+                descriptionStyle={{ color: theme.secondaryText }}
+                left={(props) => <List.Icon {...props} icon="help-circle" color={theme.primaryText} />}
+                right={(props) => <List.Icon {...props} icon="chevron-right" color={theme.primaryText} />}
                 onPress={handleSupport}
               />
             </Card.Content>
           </Card>
 
           {/* Danger Zone */}
-          <Card style={styles.dangerCard}>
+          <Card style={[styles.dangerCard, { backgroundColor: theme.cardBackground, borderColor: theme.errorColor }]}>
             <Card.Content>
-              <Text variant="titleMedium" style={styles.dangerTitle}>
+              <Text variant="titleMedium" style={[styles.dangerTitle, { color: theme.errorColor }]}>
                 Account Actions
               </Text>
 
               <Button
                 mode="outlined"
                 onPress={signOut}
-                style={styles.signOutButton}
-                textColor="#d32f2f"
+                style={[styles.signOutButton, { borderColor: theme.errorColor }]}
+                textColor={theme.errorColor}
               >
                 Sign Out
               </Button>
@@ -273,7 +287,7 @@ export default function ProfileScreen() {
           </Card>
 
           <View style={styles.footer}>
-            <Text variant="bodySmall" style={styles.footerText}>
+            <Text variant="bodySmall" style={[styles.footerText, { color: theme.secondaryText }]}>
               Arena Tracker v1.0.0
             </Text>
           </View>
@@ -302,7 +316,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontWeight: "600",
-    color: "#2d2d2d",
     flex: 1,
     textAlign: "center",
   },
@@ -323,6 +336,7 @@ const styles = StyleSheet.create({
   headerCard: {
     margin: 16,
     marginBottom: 12,
+    borderWidth: 1,
   },
   headerContent: {
     alignItems: "center",
@@ -332,13 +346,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   profileImage: {
-    backgroundColor: "#7c4dff",
   },
   cameraButton: {
     position: "absolute",
     bottom: -5,
     right: -5,
-    backgroundColor: "#7c4dff",
   },
   profileInfo: {
     alignItems: "center",
@@ -349,7 +361,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   userEmail: {
-    color: "#666",
     marginBottom: 8,
   },
   joinedInfo: {
@@ -358,7 +369,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   joinedText: {
-    color: "#666",
   },
   editButton: {
     minWidth: 120,
@@ -366,6 +376,7 @@ const styles = StyleSheet.create({
   statsCard: {
     marginHorizontal: 16,
     marginBottom: 12,
+    borderWidth: 1,
   },
   sectionTitle: {
     fontWeight: "bold",
@@ -385,26 +396,23 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   statLabel: {
-    color: "#666",
     textAlign: "center",
   },
   settingsCard: {
     marginHorizontal: 16,
     marginBottom: 12,
+    borderWidth: 1,
   },
   dangerCard: {
     marginHorizontal: 16,
     marginBottom: 12,
-    borderColor: "#ffcdd2",
     borderWidth: 1,
   },
   dangerTitle: {
     fontWeight: "bold",
-    color: "#d32f2f",
     marginBottom: 16,
   },
   signOutButton: {
-    borderColor: "#d32f2f",
     marginBottom: 8,
   },
   footer: {
@@ -412,6 +420,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   footerText: {
-    color: "#999",
   },
 });

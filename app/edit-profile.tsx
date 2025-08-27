@@ -11,10 +11,13 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { useRouter } from "expo-router";
 import * as ImagePicker from 'expo-image-picker';
+import { GradientBackground } from "./components/GradientBackground";
+import { useTimeBasedTheme } from "./hooks/useTimeBasedTheme";
 
 export default function EditProfileScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const theme = useTimeBasedTheme();
   
   const [name, setName] = useState(user?.name || "");
   const [email, setEmail] = useState(user?.email || "");
@@ -64,10 +67,11 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Card style={styles.card}>
+    <GradientBackground>
+      <ScrollView style={styles.container}>
+        <Card style={[styles.card, { backgroundColor: theme.cardBackground, borderColor: theme.cardBorder }]}>
         <Card.Content>
-          <Text variant="headlineSmall" style={styles.title}>
+          <Text variant="headlineSmall" style={[styles.title, { color: theme.primaryText }]}>
             Edit Profile
           </Text>
           
@@ -87,7 +91,8 @@ export default function EditProfileScreen() {
               size={24}
               mode="contained"
               onPress={handleImagePicker}
-              style={styles.cameraButton}
+              style={[styles.cameraButton, { backgroundColor: theme.primaryButton }]}
+              iconColor={theme.primaryButtonText}
             />
           </View>
 
@@ -96,39 +101,95 @@ export default function EditProfileScreen() {
             label="Full Name"
             value={name}
             onChangeText={setName}
-            mode="outlined"
+            mode="flat"
             style={styles.input}
+            textColor={theme.primaryText}
+            placeholderTextColor={theme.placeholderText}
+            underlineColor={theme.inputBorder}
+            activeUnderlineColor={theme.primaryButton}
+            theme={{
+              colors: {
+                onSurfaceVariant: theme.primaryText,
+                primary: theme.primaryButton,
+                surfaceVariant: theme.inputBackground,
+                background: theme.inputBackground,
+                surface: theme.inputBackground,
+                onSurface: theme.primaryText,
+              }
+            }}
           />
 
           <TextInput
             label="Email Address"
             value={email}
             onChangeText={setEmail}
-            mode="outlined"
+            mode="flat"
             keyboardType="email-address"
             autoCapitalize="none"
             style={styles.input}
             disabled // Usually email can't be changed
+            textColor={theme.secondaryText}
+            placeholderTextColor={theme.placeholderText}
+            underlineColor={theme.inputBorder}
+            activeUnderlineColor={theme.primaryButton}
+            theme={{
+              colors: {
+                onSurfaceVariant: theme.secondaryText,
+                primary: theme.primaryButton,
+                surfaceVariant: theme.surfaceBackground,
+                background: theme.surfaceBackground,
+                surface: theme.surfaceBackground,
+                onSurface: theme.secondaryText,
+              }
+            }}
           />
 
           <TextInput
             label="Bio"
             value={bio}
             onChangeText={setBio}
-            mode="outlined"
+            mode="flat"
             multiline
             numberOfLines={3}
             placeholder="Tell us about yourself..."
             style={styles.input}
+            textColor={theme.primaryText}
+            placeholderTextColor={theme.placeholderText}
+            underlineColor={theme.inputBorder}
+            activeUnderlineColor={theme.primaryButton}
+            theme={{
+              colors: {
+                onSurfaceVariant: theme.primaryText,
+                primary: theme.primaryButton,
+                surfaceVariant: theme.inputBackground,
+                background: theme.inputBackground,
+                surface: theme.inputBackground,
+                onSurface: theme.primaryText,
+              }
+            }}
           />
 
           <TextInput
             label="Location"
             value={location}
             onChangeText={setLocation}
-            mode="outlined"
+            mode="flat"
             placeholder="City, Country"
             style={styles.input}
+            textColor={theme.primaryText}
+            placeholderTextColor={theme.placeholderText}
+            underlineColor={theme.inputBorder}
+            activeUnderlineColor={theme.primaryButton}
+            theme={{
+              colors: {
+                onSurfaceVariant: theme.primaryText,
+                primary: theme.primaryButton,
+                surfaceVariant: theme.inputBackground,
+                background: theme.inputBackground,
+                surface: theme.inputBackground,
+                onSurface: theme.primaryText,
+              }
+            }}
           />
 
           {/* Action Buttons */}
@@ -138,6 +199,8 @@ export default function EditProfileScreen() {
               onPress={() => router.back()}
               style={styles.cancelButton}
               disabled={isLoading}
+              buttonColor={theme.secondaryButton}
+              textColor={theme.secondaryButtonText}
             >
               Cancel
             </Button>
@@ -148,6 +211,8 @@ export default function EditProfileScreen() {
               loading={isLoading}
               disabled={isLoading}
               style={styles.saveButton}
+              buttonColor={theme.primaryButton}
+              textColor={theme.primaryButtonText}
             >
               Save Changes
             </Button>
@@ -155,17 +220,19 @@ export default function EditProfileScreen() {
         </Card.Content>
       </Card>
     </ScrollView>
+    </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "transparent",
     padding: 16,
   },
   card: {
     marginTop: 16,
+    borderWidth: 1,
   },
   title: {
     fontWeight: "bold",
@@ -178,16 +245,15 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   profileImage: {
-    backgroundColor: "#7c4dff",
   },
   cameraButton: {
     position: "absolute",
     bottom: -5,
     right: -5,
-    backgroundColor: "#7c4dff",
   },
   input: {
     marginBottom: 16,
+    borderRadius: 8,
   },
   buttonContainer: {
     flexDirection: "row",

@@ -1,21 +1,24 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { useTimeBasedTheme } from "../hooks/useTimeBasedTheme";
 
 export default function TabsLayout() {
+  const theme = useTimeBasedTheme();
+  
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: "#f5f5f5" },
+        headerStyle: { backgroundColor: theme.tabBarBackground },
         headerShadowVisible: false,
         tabBarStyle: {
-          backgroundColor: "transparent",
+          backgroundColor: theme.tabBarBackground,
           borderTopWidth: 0,
           elevation: 0,
           shadowOpacity: 0,
           position: "absolute",
         },
-        tabBarActiveTintColor: "#6200ee",
-        tabBarInactiveTintColor: "#666666",
+        tabBarActiveTintColor: theme.activeTabColor,
+        tabBarInactiveTintColor: theme.inactiveTabColor,
       }}
     >
       <Tabs.Screen
