@@ -1,10 +1,11 @@
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack, useRouter, useSegments } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import SplashAnimation from "@/components/SplashAnimation";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,8 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const [showSplash, setShowSplash] = useState(true);
+
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -41,6 +44,11 @@ export default function RootLayout() {
                   />
                 </Stack>
               </RouteGuard>
+              {showSplash && (
+                <SplashAnimation
+                  onAnimationComplete={() => setShowSplash(false)}
+                />
+              )}
             </SafeAreaProvider>
           </PaperProvider>
         </AuthProvider>

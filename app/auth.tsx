@@ -3,8 +3,8 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from "react-native";
 import { Button, Text, TextInput } from "react-native-paper";
-import { GradientBackground } from "./components/GradientBackground";
-import { useTimeBasedTheme } from "./hooks/useTimeBasedTheme";
+import { GradientBackground } from "../components/GradientBackground";
+import { useTimeBasedTheme } from "../hooks/useTimeBasedTheme";
 
 export default function AuthScreen() {
   const [isSignUp, setIsSignUp] = useState<boolean>(false);
@@ -56,82 +56,87 @@ export default function AuthScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
       >
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: timeTheme.primaryText }]} variant="headlineMedium">
-          {" "}
-          {isSignUp ? "Create Account" : "Welcome Back"}
-        </Text>
+        <View style={styles.content}>
+          <Text
+            style={[styles.title, { color: timeTheme.primaryText }]}
+            variant="headlineMedium"
+          >
+            {" "}
+            {isSignUp ? "Create Account" : "Welcome Back"}
+          </Text>
 
-        <TextInput
-          label="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          placeholder="example@gmail.com"
-          mode="flat"
-          style={styles.input}
-          onChangeText={setEmail}
-          textColor={timeTheme.primaryText}
-          placeholderTextColor={timeTheme.placeholderText}
-          underlineColor={timeTheme.inputBorder}
-          activeUnderlineColor={timeTheme.primaryButton}
-          theme={{
-            colors: {
-              onSurfaceVariant: timeTheme.primaryText,
-              primary: timeTheme.primaryButton,
-              surfaceVariant: timeTheme.inputBackground,
-              background: timeTheme.inputBackground,
-              surface: timeTheme.inputBackground,
-              onSurface: timeTheme.primaryText,
-            }
-          }}
-        />
+          <TextInput
+            label="Email"
+            autoCapitalize="none"
+            keyboardType="email-address"
+            placeholder="example@gmail.com"
+            mode="flat"
+            style={styles.input}
+            onChangeText={setEmail}
+            textColor={timeTheme.primaryText}
+            placeholderTextColor={timeTheme.placeholderText}
+            underlineColor={timeTheme.inputBorder}
+            activeUnderlineColor={timeTheme.primaryButton}
+            theme={{
+              colors: {
+                onSurfaceVariant: timeTheme.primaryText,
+                primary: timeTheme.primaryButton,
+                surfaceVariant: timeTheme.inputBackground,
+                background: timeTheme.inputBackground,
+                surface: timeTheme.inputBackground,
+                onSurface: timeTheme.primaryText,
+              },
+            }}
+          />
 
-        <TextInput
-          label="Password"
-          autoCapitalize="none"
-          mode="flat"
-          secureTextEntry
-          style={styles.input}
-          onChangeText={setPassword}
-          textColor={timeTheme.primaryText}
-          placeholderTextColor={timeTheme.placeholderText}
-          underlineColor={timeTheme.inputBorder}
-          activeUnderlineColor={timeTheme.primaryButton}
-          theme={{
-            colors: {
-              onSurfaceVariant: timeTheme.primaryText,
-              primary: timeTheme.primaryButton,
-              surfaceVariant: timeTheme.inputBackground,
-              background: timeTheme.inputBackground,
-              surface: timeTheme.inputBackground,
-              onSurface: timeTheme.primaryText,
-            }
-          }}
-        />
+          <TextInput
+            label="Password"
+            autoCapitalize="none"
+            mode="flat"
+            secureTextEntry
+            style={styles.input}
+            onChangeText={setPassword}
+            textColor={timeTheme.primaryText}
+            placeholderTextColor={timeTheme.placeholderText}
+            underlineColor={timeTheme.inputBorder}
+            activeUnderlineColor={timeTheme.primaryButton}
+            theme={{
+              colors: {
+                onSurfaceVariant: timeTheme.primaryText,
+                primary: timeTheme.primaryButton,
+                surfaceVariant: timeTheme.inputBackground,
+                background: timeTheme.inputBackground,
+                surface: timeTheme.inputBackground,
+                onSurface: timeTheme.primaryText,
+              },
+            }}
+          />
 
-        {error && <Text style={{ color: timeTheme.errorColor }}> {error}</Text>}
+          {error && (
+            <Text style={{ color: timeTheme.errorColor }}> {error}</Text>
+          )}
 
-        <Button 
-          mode="contained" 
-          style={styles.button} 
-          onPress={handleAuth}
-          buttonColor={timeTheme.primaryButton}
-          textColor={timeTheme.primaryButtonText}
-        >
-          {isSignUp ? "Sign Up" : "Sign In"}
-        </Button>
+          <Button
+            mode="contained"
+            style={styles.button}
+            onPress={handleAuth}
+            buttonColor={timeTheme.primaryButton}
+            textColor={timeTheme.primaryButtonText}
+          >
+            {isSignUp ? "Sign Up" : "Sign In"}
+          </Button>
 
-        <Button
-          mode="text"
-          onPress={handleSwitchMode}
-          style={styles.switchModeButton}
-          textColor={timeTheme.secondaryButtonText}
-        >
-          {isSignUp
-            ? "Already have an account? Sign In"
-            : "Don't have an account? Sign Up"}
-        </Button>
-      </View>
+          <Button
+            mode="text"
+            onPress={handleSwitchMode}
+            style={styles.switchModeButton}
+            textColor={timeTheme.secondaryButtonText}
+          >
+            {isSignUp
+              ? "Already have an account? Sign In"
+              : "Don't have an account? Sign Up"}
+          </Button>
+        </View>
       </KeyboardAvoidingView>
     </GradientBackground>
   );

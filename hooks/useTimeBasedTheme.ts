@@ -1,41 +1,41 @@
-import { useMemo } from 'react';
+import { useMemo } from "react";
 
 export interface TimeBasedTheme {
   // Background gradients
   gradientColors: [string, string];
-  
+
   // Card and surface colors
   cardBackground: string;
   cardBorder: string;
   surfaceBackground: string;
-  
+
   // Text colors
   primaryText: string;
   secondaryText: string;
   headerText: string;
-  
+
   // Button and interactive colors
   primaryButton: string;
   primaryButtonText: string;
   secondaryButton: string;
   secondaryButtonText: string;
-  
+
   // Navigation colors
   tabBarBackground: string;
   activeTabColor: string;
   inactiveTabColor: string;
-  
+
   // Status and accent colors
   successColor: string;
   warningColor: string;
   errorColor: string;
   accentColor: string;
-  
+
   // Input and form colors
   inputBackground: string;
   inputBorder: string;
   placeholderText: string;
-  
+
   // Progress and completion colors
   progressColor: string;
   completionColor: string;
@@ -72,7 +72,7 @@ const getTimeBasedTheme = (): TimeBasedTheme => {
       placeholderText: "#999999",
       progressColor: "#D4A5A5",
       completionColor: "#A5D4A5",
-      streakColor: "#E8B4CB"
+      streakColor: "#E8B4CB",
     };
   }
 
@@ -102,7 +102,7 @@ const getTimeBasedTheme = (): TimeBasedTheme => {
       placeholderText: "#888888",
       progressColor: "#B8A082",
       completionColor: "#82B882",
-      streakColor: "#C8B5A0"
+      streakColor: "#C8B5A0",
     };
   }
 
@@ -132,7 +132,7 @@ const getTimeBasedTheme = (): TimeBasedTheme => {
       placeholderText: "#AAAAAA",
       progressColor: "#9F8A82",
       completionColor: "#82A582",
-      streakColor: "#8A7B82"
+      streakColor: "#8A7B82",
     };
   }
 
@@ -161,7 +161,7 @@ const getTimeBasedTheme = (): TimeBasedTheme => {
     placeholderText: "#999999",
     progressColor: "#8A7F76",
     completionColor: "#6B8B6B",
-    streakColor: "#6B6B6B"
+    streakColor: "#6B6B6B",
   };
 };
 

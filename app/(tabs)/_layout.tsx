@@ -1,10 +1,10 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
-import { useTimeBasedTheme } from "../hooks/useTimeBasedTheme";
+import { useTimeBasedTheme } from "../../hooks/useTimeBasedTheme";
 
 export default function TabsLayout() {
   const theme = useTimeBasedTheme();
-  
+
   return (
     <Tabs
       screenOptions={{

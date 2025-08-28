@@ -5,9 +5,9 @@ import React, { useMemo, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import { Button, Card, Chip, Searchbar, Text } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { AppHeader } from "../components/AppHeader";
-import { GradientBackground } from "../components/GradientBackground";
-import { useTimeBasedTheme } from "../hooks/useTimeBasedTheme";
+import { AppHeader } from "../../components/AppHeader";
+import { GradientBackground } from "../../components/GradientBackground";
+import { useTimeBasedTheme } from "../../hooks/useTimeBasedTheme";
 
 type HabitWithJoinStatus = Habit & {
   canJoin: boolean;
@@ -58,28 +58,63 @@ export default function BrowseArenasScreen() {
   };
 
   const renderArenaCard = ({ item: arena }: { item: HabitWithJoinStatus }) => (
-    <Card style={[styles.card, { backgroundColor: theme.cardBackground, borderColor: theme.cardBorder }]}>
+    <Card
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.cardBackground,
+          borderColor: theme.cardBorder,
+        },
+      ]}
+    >
       <Card.Content>
         <View style={styles.cardHeader}>
-          <Text variant="titleMedium" style={[styles.arenaTitle, { color: theme.primaryText }]}>
+          <Text
+            variant="titleMedium"
+            style={[styles.arenaTitle, { color: theme.primaryText }]}
+          >
             {arena.title}
           </Text>
-          <View style={[styles.participantBadge, { backgroundColor: theme.accentColor }]}>
-            <Text style={[styles.participantCount, { color: theme.primaryButtonText }]}>
+          <View
+            style={[
+              styles.participantBadge,
+              { backgroundColor: theme.accentColor },
+            ]}
+          >
+            <Text
+              style={[
+                styles.participantCount,
+                { color: theme.primaryButtonText },
+              ]}
+            >
               {arena.participant_count} joined
             </Text>
           </View>
         </View>
 
-        <Text variant="bodyMedium" style={[styles.arenaDescription, { color: theme.secondaryText }]}>
+        <Text
+          variant="bodyMedium"
+          style={[styles.arenaDescription, { color: theme.secondaryText }]}
+        >
           {arena.description}
         </Text>
 
         <View style={styles.arenaMeta}>
-          <Chip style={[styles.frequencyChip, { backgroundColor: theme.surfaceBackground }]} textStyle={{ color: theme.primaryText }}>{arena.frequency}</Chip>
+          <Chip
+            style={[
+              styles.frequencyChip,
+              { backgroundColor: theme.surfaceBackground },
+            ]}
+            textStyle={{ color: theme.primaryText }}
+          >
+            {arena.frequency}
+          </Chip>
 
           {arena.unit_type && arena.unit_type !== "boolean" && (
-            <Chip style={[styles.typeChip, { backgroundColor: theme.successColor }]} textStyle={{ color: theme.primaryButtonText }}>
+            <Chip
+              style={[styles.typeChip, { backgroundColor: theme.successColor }]}
+              textStyle={{ color: theme.primaryButtonText }}
+            >
               {arena.unit_type === "number" &&
                 `Track: ${arena.unit_label || "numbers"}`}
               {arena.unit_type === "time" && "Track: time"}
@@ -88,12 +123,23 @@ export default function BrowseArenasScreen() {
           )}
 
           {arena.target_value && (
-            <Chip style={[styles.targetChip, { backgroundColor: theme.warningColor }]} textStyle={{ color: theme.primaryButtonText }}>Goal: {arena.target_value}</Chip>
+            <Chip
+              style={[
+                styles.targetChip,
+                { backgroundColor: theme.warningColor },
+              ]}
+              textStyle={{ color: theme.primaryButtonText }}
+            >
+              Goal: {arena.target_value}
+            </Chip>
           )}
         </View>
 
         <View style={styles.creatorInfo}>
-          <Text variant="bodySmall" style={[styles.creatorText, { color: theme.secondaryText }]}>
+          <Text
+            variant="bodySmall"
+            style={[styles.creatorText, { color: theme.secondaryText }]}
+          >
             {arena.isCreatedByUser
               ? "Created by you"
               : `Created by User ${(
@@ -119,9 +165,9 @@ export default function BrowseArenasScreen() {
             Join Arena
           </Button>
         ) : arena.isJoinedByUser ? (
-          <Button 
-            mode="outlined" 
-            disabled 
+          <Button
+            mode="outlined"
+            disabled
             style={styles.joinedButton}
             buttonColor={theme.successColor}
             textColor={theme.primaryButtonText}
@@ -129,9 +175,9 @@ export default function BrowseArenasScreen() {
             Already Joined
           </Button>
         ) : arena.isCreatedByUser ? (
-          <Button 
-            mode="outlined" 
-            disabled 
+          <Button
+            mode="outlined"
+            disabled
             style={styles.ownArenaButton}
             buttonColor={theme.warningColor}
             textColor={theme.primaryButtonText}
@@ -147,7 +193,9 @@ export default function BrowseArenasScreen() {
     return (
       <GradientBackground>
         <View style={styles.centerContainer}>
-          <Text style={{ color: theme.primaryText }}>Loading available arenas...</Text>
+          <Text style={{ color: theme.primaryText }}>
+            Loading available arenas...
+          </Text>
         </View>
       </GradientBackground>
     );
@@ -167,12 +215,15 @@ export default function BrowseArenasScreen() {
               placeholder="Search arenas..."
               onChangeText={setSearchQuery}
               value={searchQuery}
-              style={[styles.searchbar, { 
-                backgroundColor: theme.inputBackground, 
-                borderColor: theme.inputBorder,
-                borderWidth: 1,
-                borderRadius: 8,
-              }]}
+              style={[
+                styles.searchbar,
+                {
+                  backgroundColor: theme.inputBackground,
+                  borderColor: theme.inputBorder,
+                  borderWidth: 1,
+                  borderRadius: 8,
+                },
+              ]}
               inputStyle={[styles.searchInput, { color: theme.primaryText }]}
               placeholderTextColor={theme.placeholderText}
               icon="magnify"
@@ -186,22 +237,30 @@ export default function BrowseArenasScreen() {
                   background: theme.inputBackground,
                   surface: theme.inputBackground,
                   onSurface: theme.primaryText,
-                }
+                },
               }}
             />
           </View>
 
           {allArenas.length === 0 ? (
             <View style={styles.centerContainer}>
-              <Text style={[styles.emptyText, { color: theme.primaryText }]}>No arenas found.</Text>
-              <Text style={[styles.emptySubtext, { color: theme.secondaryText }]}>
+              <Text style={[styles.emptyText, { color: theme.primaryText }]}>
+                No arenas found.
+              </Text>
+              <Text
+                style={[styles.emptySubtext, { color: theme.secondaryText }]}
+              >
                 Create your first arena to get started!
               </Text>
             </View>
           ) : filteredArenas.length === 0 ? (
             <View style={styles.centerContainer}>
-              <Text style={[styles.emptyText, { color: theme.primaryText }]}>No arenas match your search.</Text>
-              <Text style={[styles.emptySubtext, { color: theme.secondaryText }]}>
+              <Text style={[styles.emptyText, { color: theme.primaryText }]}>
+                No arenas match your search.
+              </Text>
+              <Text
+                style={[styles.emptySubtext, { color: theme.secondaryText }]}
+              >
                 Try different keywords or clear your search.
               </Text>
             </View>
@@ -242,8 +301,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
   },
-  searchInput: {
-  },
+  searchInput: {},
   centerContainer: {
     flex: 1,
     justifyContent: "center",
@@ -294,12 +352,9 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 12,
   },
-  frequencyChip: {
-  },
-  typeChip: {
-  },
-  targetChip: {
-  },
+  frequencyChip: {},
+  typeChip: {},
+  targetChip: {},
   creatorInfo: {
     marginBottom: 8,
   },
