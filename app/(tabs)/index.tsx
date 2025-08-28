@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import {
   useCompleteHabit,
@@ -8,12 +7,13 @@ import {
 } from "@/lib/queries";
 import { Habit } from "@/types/database.type";
 import { useRouter } from "expo-router";
+import React, { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { HabitsList } from "../components/HabitsList";
-import { RecordInputModal } from "../components/RecordInputModal";
-import { AppHeader } from "../components/AppHeader";
-import { GradientBackground } from "../components/GradientBackground";
+import { AppHeader } from "../../components/AppHeader";
+import { GradientBackground } from "../../components/GradientBackground";
+import { HabitsList } from "../../components/HabitsList";
+import { RecordInputModal } from "../../components/RecordInputModal";
 
 export default function Index() {
   const { user } = useAuth();
@@ -94,25 +94,24 @@ export default function Index() {
   return (
     <GradientBackground>
       <SafeAreaView style={styles.container}>
-      <AppHeader title="Get alerts for new actions" />
-      
-      <View style={styles.content}>
+        <AppHeader title="Get alerts for new actions" />
 
-        <HabitsList
-          habits={habits}
-          completedHabits={completedHabits}
-          completions={completions}
-          onDeleteHabit={handleDeleteHabit}
-          onCompleteHabit={handleCompleteHabit}
-        />
+        <View style={styles.content}>
+          <HabitsList
+            habits={habits}
+            completedHabits={completedHabits}
+            completions={completions}
+            onDeleteHabit={handleDeleteHabit}
+            onCompleteHabit={handleCompleteHabit}
+          />
 
-        <RecordInputModal
-          visible={recordModalVisible}
-          habit={selectedHabit}
-          onDismiss={() => setRecordModalVisible(false)}
-          onSubmit={handleModalSubmit}
-        />
-      </View>
+          <RecordInputModal
+            visible={recordModalVisible}
+            habit={selectedHabit}
+            onDismiss={() => setRecordModalVisible(false)}
+            onSubmit={handleModalSubmit}
+          />
+        </View>
       </SafeAreaView>
     </GradientBackground>
   );

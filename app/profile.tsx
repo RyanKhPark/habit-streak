@@ -21,8 +21,8 @@ import {
   Text,
 } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { GradientBackground } from "./components/GradientBackground";
-import { useTimeBasedTheme } from "./hooks/useTimeBasedTheme";
+import { GradientBackground } from "../components/GradientBackground";
+import { useTimeBasedTheme } from "../hooks/useTimeBasedTheme";
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
