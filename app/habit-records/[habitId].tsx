@@ -59,6 +59,7 @@ export default function HabitRecordsScreen() {
     TableData["users"][0] | null
   >(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [bannerModalVisible, setBannerModalVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -434,6 +435,25 @@ export default function HabitRecordsScreen() {
           </Card.Content>
         </Card>
 
+        {/* Banner Component */}
+        <TouchableOpacity
+          onPress={() => setBannerModalVisible(true)}
+          style={[
+            styles.bannerContainer,
+            {
+              backgroundColor: theme.cardBackground,
+              borderColor: theme.cardBorder,
+            },
+          ]}
+        >
+          <Text
+            variant="bodyMedium"
+            style={[styles.bannerText, { color: theme.primaryText }]}
+          >
+            {Dimensions.get('window').width.toFixed(0)} × {(Dimensions.get('window').width * 0.25).toFixed(0)}
+          </Text>
+        </TouchableOpacity>
+
         <Card
           style={[
             styles.tableCard,
@@ -711,6 +731,104 @@ export default function HabitRecordsScreen() {
               </Button>
             </View>
           </Modal>
+
+          {/* Banner Modal */}
+          <Modal
+            visible={bannerModalVisible}
+            onDismiss={() => setBannerModalVisible(false)}
+            contentContainerStyle={styles.modalBackdrop}
+          >
+            <View
+              style={[
+                styles.bannerModalContainer,
+                {
+                  backgroundColor: theme.cardBackground,
+                  borderColor: theme.cardBorder,
+                },
+              ]}
+            >
+              <View style={styles.modalHeader}>
+                <Text
+                  variant="headlineSmall"
+                  style={[styles.modalTitle, { color: theme.primaryText }]}
+                >
+                  Schedule & Upload
+                </Text>
+                <IconButton
+                  icon="close"
+                  size={24}
+                  onPress={() => setBannerModalVisible(false)}
+                  iconColor={theme.primaryText}
+                />
+              </View>
+
+              <View style={styles.bannerModalContent}>
+                {/* Calendar Section */}
+                <Text
+                  variant="titleMedium"
+                  style={[styles.sectionTitle, { color: theme.primaryText }]}
+                >
+                  📅 Select Date Range
+                </Text>
+                <View
+                  style={[
+                    styles.calendarPlaceholder,
+                    { backgroundColor: theme.surfaceBackground, borderColor: theme.cardBorder },
+                  ]}
+                >
+                  <Text style={{ color: theme.secondaryText }}>
+                    Calendar component will go here
+                  </Text>
+                </View>
+
+                {/* Upload Section */}
+                <Text
+                  variant="titleMedium"
+                  style={[styles.sectionTitle, { color: theme.primaryText }]}
+                >
+                  📸 Upload Image
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.uploadBox,
+                    { backgroundColor: theme.surfaceBackground, borderColor: theme.cardBorder },
+                  ]}
+                >
+                  <Text style={{ color: theme.secondaryText }}>
+                    Tap to upload image
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Preview Section */}
+                <Text
+                  variant="titleMedium"
+                  style={[styles.sectionTitle, { color: theme.primaryText }]}
+                >
+                  👁️ Preview
+                </Text>
+                <View
+                  style={[
+                    styles.previewBox,
+                    { backgroundColor: theme.surfaceBackground, borderColor: theme.cardBorder },
+                  ]}
+                >
+                  <Text style={{ color: theme.secondaryText }}>
+                    Image and date range preview
+                  </Text>
+                </View>
+              </View>
+
+              <Button
+                mode="contained"
+                onPress={() => setBannerModalVisible(false)}
+                style={styles.submitButton}
+                buttonColor={theme.primaryButton}
+                textColor={theme.primaryButtonText}
+              >
+                Submit
+              </Button>
+            </View>
+          </Modal>
         </Portal>
       </View>
     </GradientBackground>
@@ -944,5 +1062,68 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     marginTop: 16,
+  },
+  bannerContainer: {
+    marginHorizontal: 16,
+    marginVertical: 4,
+    height: Dimensions.get('window').width * 0.25,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  bannerText: {
+    fontWeight: 'bold',
+  },
+  bannerModalContainer: {
+    padding: 24,
+    maxHeight: '90%',
+    borderRadius: 16,
+    borderWidth: 1,
+    width: '90%',
+  },
+  bannerModalContent: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    marginBottom: 12,
+    marginTop: 16,
+    fontWeight: 'bold',
+  },
+  calendarPlaceholder: {
+    height: 180,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  uploadBox: {
+    height: 120,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  previewBox: {
+    height: 100,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  submitButton: {
+    marginTop: 8,
   },
 });
