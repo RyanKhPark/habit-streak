@@ -6,9 +6,16 @@ import {
 } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
 import { Habit, HabitCompletion } from "@/types/database.type";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import {
+  Dimensions,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Query } from "react-native-appwrite";
 import {
   ActivityIndicator,
@@ -37,7 +44,6 @@ interface TableData {
 export default function HabitRecordsScreen() {
   const { habitId } = useLocalSearchParams<{ habitId: string }>();
   const { user } = useAuth();
-  const router = useRouter();
   const theme = useTimeBasedTheme();
 
   const [habit, setHabit] = useState<Habit | null>(null);
@@ -187,7 +193,7 @@ export default function HabitRecordsScreen() {
   const formatDate = (dateStr: string) => {
     // IMPORTANT: dateStr is in YYYY-MM-DD format, not a timestamp
     // Don't use new Date() which can cause timezone issues
-    const [year, month, day] = dateStr.split("-");
+    const [, month, day] = dateStr.split("-");
     return `${month}/${day}`;
   };
 
@@ -249,24 +255,7 @@ export default function HabitRecordsScreen() {
     );
     const maxValue = Math.max(...allValues, 1);
 
-    // Generate SVG path for the line
-    let pathData = "";
     const validPoints = dataPoints.filter((point) => point.hasCompletion);
-
-    if (validPoints.length > 0) {
-      validPoints.forEach((point, index) => {
-        const x =
-          padding.left + (point.index / (dates.length - 1)) * graphWidth;
-        const y =
-          padding.top + graphHeight - (point.value / maxValue) * graphHeight;
-
-        if (index === 0) {
-          pathData += `M ${x} ${y}`;
-        } else {
-          pathData += ` L ${x} ${y}`;
-        }
-      });
-    }
 
     return (
       <View
@@ -463,7 +452,7 @@ export default function HabitRecordsScreen() {
               <View
                 style={[
                   styles.customTable,
-                  { minWidth: 150 + tableData.dates.length * 80 },
+                  { minWidth: 150 + tableData.dates.length * 70 },
                 ]}
               >
                 {/* Custom Table Header */}
@@ -522,7 +511,10 @@ export default function HabitRecordsScreen() {
                         isCurrentUser && { backgroundColor: theme.accentColor },
                       ]}
                     >
-                      <View style={[styles.customCell, styles.userColumn]}>
+                      <TouchableOpacity
+                        style={[styles.customCell, styles.userColumn]}
+                        onPress={() => handleUserPress(userData)}
+                      >
                         <View style={styles.userCell}>
                           <Avatar.Text
                             size={24}
@@ -548,7 +540,7 @@ export default function HabitRecordsScreen() {
                             {isCurrentUser && " (You)"}
                           </Text>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                       {tableData.dates.map((date) => {
                         const completion = userData.completions[date];
                         const isToday = date === getTodayString();
@@ -601,107 +593,123 @@ export default function HabitRecordsScreen() {
           <Modal
             visible={modalVisible}
             onDismiss={() => setModalVisible(false)}
-            contentContainerStyle={styles.modalContainer}
+            contentContainerStyle={styles.modalBackdrop}
           >
-            <Card
+            <View
               style={[
-                styles.modalCard,
+                styles.modalContainer,
                 {
                   backgroundColor: theme.cardBackground,
                   borderColor: theme.cardBorder,
-                  borderWidth: 1,
+                  width: Math.min(
+                    150 + tableData.dates.length * 70,
+                    Dimensions.get("window").width - 32
+                  ),
                 },
               ]}
             >
-              <Card.Content>
-                <View style={styles.modalHeader}>
+              <View style={styles.modalHeader}>
+                <Text
+                  variant="headlineSmall"
+                  style={[styles.modalTitle, { color: theme.primaryText }]}
+                >
+                  {selectedUser?.user_name}&apos;s Progress
+                </Text>
+                <IconButton
+                  icon="close"
+                  size={24}
+                  onPress={() => setModalVisible(false)}
+                  iconColor={theme.primaryText}
+                />
+              </View>
+
+              {selectedUser && (
+                <View style={styles.progressContainer}>
                   <Text
-                    variant="headlineSmall"
-                    style={[styles.modalTitle, { color: theme.primaryText }]}
+                    variant="titleMedium"
+                    style={[styles.progressTitle, { color: theme.primaryText }]}
                   >
-                    {selectedUser?.user_name}&apos;s Progress
+                    Recent Activity
                   </Text>
-                  <IconButton
-                    icon="close"
-                    size={24}
-                    onPress={() => setModalVisible(false)}
-                    iconColor={theme.primaryText}
-                  />
-                </View>
 
-                {selectedUser && (
-                  <View style={styles.progressContainer}>
-                    <Text
-                      variant="titleMedium"
-                      style={[
-                        styles.progressTitle,
-                        { color: theme.primaryText },
-                      ]}
-                    >
-                      Recent Activity
-                    </Text>
-
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                    >
-                      <View style={styles.lineChartContainer}>
-                        {selectedUser && (
-                          <LineChart
-                            dates={tableData.dates.slice().reverse()}
-                            userData={selectedUser}
-                            habit={habit}
-                            formatValue={formatValue}
-                            formatDate={formatDate}
-                          />
-                        )}
-                      </View>
-                    </ScrollView>
-
-                    <View style={styles.statsContainer}>
-                      <View style={styles.statBox}>
-                        <Text variant="titleMedium">
-                          {Object.keys(selectedUser.completions).length}
-                        </Text>
-                        <Text variant="bodySmall" style={styles.statLabel}>
-                          Total Days
-                        </Text>
-                      </View>
-
-                      {habit?.unit_type === "number" && (
-                        <View style={styles.statBox}>
-                          <Text variant="titleMedium">
-                            {(
-                              Object.values(selectedUser.completions)
-                                .filter((c) => c)
-                                .reduce(
-                                  (sum, c) => sum + parseFloat(c!.value || "0"),
-                                  0
-                                ) /
-                                Object.keys(selectedUser.completions).length ||
-                              0
-                            ).toFixed(1)}
-                          </Text>
-                          <Text variant="bodySmall" style={styles.statLabel}>
-                            Average {habit.unit_label}
-                          </Text>
-                        </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.chartScrollView}
+                  >
+                    <View style={styles.lineChartContainer}>
+                      {selectedUser && (
+                        <LineChart
+                          dates={tableData.dates}
+                          userData={selectedUser}
+                          habit={habit}
+                          formatValue={formatValue}
+                          formatDate={formatDate}
+                        />
                       )}
                     </View>
-                  </View>
-                )}
+                  </ScrollView>
 
-                <Button
-                  mode="contained"
-                  onPress={() => setModalVisible(false)}
-                  style={styles.closeButton}
-                  buttonColor={theme.primaryButton}
-                  textColor={theme.primaryButtonText}
-                >
-                  Close
-                </Button>
-              </Card.Content>
-            </Card>
+                  <View style={styles.statsContainer}>
+                    <View style={styles.statBox}>
+                      <Text
+                        variant="titleMedium"
+                        style={{ color: theme.primaryText }}
+                      >
+                        {Object.keys(selectedUser.completions).length}
+                      </Text>
+                      <Text
+                        variant="bodySmall"
+                        style={[
+                          styles.statLabel,
+                          { color: theme.secondaryText },
+                        ]}
+                      >
+                        Total Days
+                      </Text>
+                    </View>
+
+                    {habit?.unit_type === "number" && (
+                      <View style={styles.statBox}>
+                        <Text
+                          variant="titleMedium"
+                          style={{ color: theme.primaryText }}
+                        >
+                          {(
+                            Object.values(selectedUser.completions)
+                              .filter((c) => c)
+                              .reduce(
+                                (sum, c) => sum + parseFloat(c!.value || "0"),
+                                0
+                              ) /
+                              Object.keys(selectedUser.completions).length || 0
+                          ).toFixed(1)}
+                        </Text>
+                        <Text
+                          variant="bodySmall"
+                          style={[
+                            styles.statLabel,
+                            { color: theme.secondaryText },
+                          ]}
+                        >
+                          Average {habit.unit_label}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+
+              <Button
+                mode="contained"
+                onPress={() => setModalVisible(false)}
+                style={styles.closeButton}
+                buttonColor={theme.primaryButton}
+                textColor={theme.primaryButtonText}
+              >
+                Close
+              </Button>
+            </View>
           </Modal>
         </Portal>
       </View>
@@ -793,16 +801,7 @@ const styles = StyleSheet.create({
     width: 70, // Fixed width for consistency
     justifyContent: "center",
   },
-  tableRow: {
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.1)",
-  },
-  currentUserRow: {},
   headerText: {
-    fontWeight: "bold",
-  },
-  todayColumn: {},
-  todayHeaderText: {
     fontWeight: "bold",
   },
   userCell: {
@@ -837,16 +836,23 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
-  modalContainer: {
+  modalBackdrop: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    margin: 20,
+    paddingHorizontal: 20,
+    height: Dimensions.get('screen').height + (StatusBar.currentHeight || 0),
+    width: Dimensions.get('screen').width,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    position: 'absolute',
+    top: -(StatusBar.currentHeight || 0),
+    left: 0,
   },
-  modalCard: {
-    width: "100%",
-    maxWidth: 400,
-    maxHeight: "80%",
+  modalContainer: {
+    padding: 20,
+    maxHeight: "85%",
+    borderRadius: 12,
+    borderWidth: 1,
   },
   modalHeader: {
     flexDirection: "row",
@@ -857,6 +863,9 @@ const styles = StyleSheet.create({
   modalTitle: {
     flex: 1,
     fontWeight: "bold",
+  },
+  chartScrollView: {
+    marginBottom: 16,
   },
   progressContainer: {
     marginBottom: 20,
@@ -869,7 +878,9 @@ const styles = StyleSheet.create({
   lineChartContainer: {
     paddingVertical: 20,
     paddingHorizontal: 10,
-    minHeight: 180,
+    minHeight: 160,
+    alignItems: "center",
+    justifyContent: "center",
   },
   svgContainer: {
     position: "relative",
@@ -923,8 +934,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     marginTop: 20,
     paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
   },
   statBox: {
     alignItems: "center",
