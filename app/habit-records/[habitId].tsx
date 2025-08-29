@@ -6,9 +6,16 @@ import {
 } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
 import { Habit, HabitCompletion } from "@/types/database.type";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import {
+  Dimensions,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { Query } from "react-native-appwrite";
 import {
   ActivityIndicator,
@@ -37,7 +44,6 @@ interface TableData {
 export default function HabitRecordsScreen() {
   const { habitId } = useLocalSearchParams<{ habitId: string }>();
   const { user } = useAuth();
-  const router = useRouter();
   const theme = useTimeBasedTheme();
 
   const [habit, setHabit] = useState<Habit | null>(null);
@@ -53,6 +59,7 @@ export default function HabitRecordsScreen() {
     TableData["users"][0] | null
   >(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [bannerModalVisible, setBannerModalVisible] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -187,7 +194,7 @@ export default function HabitRecordsScreen() {
   const formatDate = (dateStr: string) => {
     // IMPORTANT: dateStr is in YYYY-MM-DD format, not a timestamp
     // Don't use new Date() which can cause timezone issues
-    const [year, month, day] = dateStr.split("-");
+    const [, month, day] = dateStr.split("-");
     return `${month}/${day}`;
   };
 
@@ -249,24 +256,7 @@ export default function HabitRecordsScreen() {
     );
     const maxValue = Math.max(...allValues, 1);
 
-    // Generate SVG path for the line
-    let pathData = "";
     const validPoints = dataPoints.filter((point) => point.hasCompletion);
-
-    if (validPoints.length > 0) {
-      validPoints.forEach((point, index) => {
-        const x =
-          padding.left + (point.index / (dates.length - 1)) * graphWidth;
-        const y =
-          padding.top + graphHeight - (point.value / maxValue) * graphHeight;
-
-        if (index === 0) {
-          pathData += `M ${x} ${y}`;
-        } else {
-          pathData += ` L ${x} ${y}`;
-        }
-      });
-    }
 
     return (
       <View
@@ -445,6 +435,25 @@ export default function HabitRecordsScreen() {
           </Card.Content>
         </Card>
 
+        {/* Banner Component */}
+        <TouchableOpacity
+          onPress={() => setBannerModalVisible(true)}
+          style={[
+            styles.bannerContainer,
+            {
+              backgroundColor: theme.cardBackground,
+              borderColor: theme.cardBorder,
+            },
+          ]}
+        >
+          <Text
+            variant="bodyMedium"
+            style={[styles.bannerText, { color: theme.primaryText }]}
+          >
+            {Dimensions.get('window').width.toFixed(0)} × {(Dimensions.get('window').width * 0.25).toFixed(0)}
+          </Text>
+        </TouchableOpacity>
+
         <Card
           style={[
             styles.tableCard,
@@ -463,7 +472,7 @@ export default function HabitRecordsScreen() {
               <View
                 style={[
                   styles.customTable,
-                  { minWidth: 150 + tableData.dates.length * 80 },
+                  { minWidth: 150 + tableData.dates.length * 70 },
                 ]}
               >
                 {/* Custom Table Header */}
@@ -522,7 +531,10 @@ export default function HabitRecordsScreen() {
                         isCurrentUser && { backgroundColor: theme.accentColor },
                       ]}
                     >
-                      <View style={[styles.customCell, styles.userColumn]}>
+                      <TouchableOpacity
+                        style={[styles.customCell, styles.userColumn]}
+                        onPress={() => handleUserPress(userData)}
+                      >
                         <View style={styles.userCell}>
                           <Avatar.Text
                             size={24}
@@ -548,7 +560,7 @@ export default function HabitRecordsScreen() {
                             {isCurrentUser && " (You)"}
                           </Text>
                         </View>
-                      </View>
+                      </TouchableOpacity>
                       {tableData.dates.map((date) => {
                         const completion = userData.completions[date];
                         const isToday = date === getTodayString();
@@ -601,107 +613,221 @@ export default function HabitRecordsScreen() {
           <Modal
             visible={modalVisible}
             onDismiss={() => setModalVisible(false)}
-            contentContainerStyle={styles.modalContainer}
+            contentContainerStyle={styles.modalBackdrop}
           >
-            <Card
+            <View
               style={[
-                styles.modalCard,
+                styles.modalContainer,
                 {
                   backgroundColor: theme.cardBackground,
                   borderColor: theme.cardBorder,
-                  borderWidth: 1,
+                  width: Math.min(
+                    150 + tableData.dates.length * 70,
+                    Dimensions.get("window").width - 32
+                  ),
                 },
               ]}
             >
-              <Card.Content>
-                <View style={styles.modalHeader}>
+              <View style={styles.modalHeader}>
+                <Text
+                  variant="headlineSmall"
+                  style={[styles.modalTitle, { color: theme.primaryText }]}
+                >
+                  {selectedUser?.user_name}&apos;s Progress
+                </Text>
+                <IconButton
+                  icon="close"
+                  size={24}
+                  onPress={() => setModalVisible(false)}
+                  iconColor={theme.primaryText}
+                />
+              </View>
+
+              {selectedUser && (
+                <View style={styles.progressContainer}>
                   <Text
-                    variant="headlineSmall"
-                    style={[styles.modalTitle, { color: theme.primaryText }]}
+                    variant="titleMedium"
+                    style={[styles.progressTitle, { color: theme.primaryText }]}
                   >
-                    {selectedUser?.user_name}&apos;s Progress
+                    Recent Activity
                   </Text>
-                  <IconButton
-                    icon="close"
-                    size={24}
-                    onPress={() => setModalVisible(false)}
-                    iconColor={theme.primaryText}
-                  />
-                </View>
 
-                {selectedUser && (
-                  <View style={styles.progressContainer}>
-                    <Text
-                      variant="titleMedium"
-                      style={[
-                        styles.progressTitle,
-                        { color: theme.primaryText },
-                      ]}
-                    >
-                      Recent Activity
-                    </Text>
-
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                    >
-                      <View style={styles.lineChartContainer}>
-                        {selectedUser && (
-                          <LineChart
-                            dates={tableData.dates.slice().reverse()}
-                            userData={selectedUser}
-                            habit={habit}
-                            formatValue={formatValue}
-                            formatDate={formatDate}
-                          />
-                        )}
-                      </View>
-                    </ScrollView>
-
-                    <View style={styles.statsContainer}>
-                      <View style={styles.statBox}>
-                        <Text variant="titleMedium">
-                          {Object.keys(selectedUser.completions).length}
-                        </Text>
-                        <Text variant="bodySmall" style={styles.statLabel}>
-                          Total Days
-                        </Text>
-                      </View>
-
-                      {habit?.unit_type === "number" && (
-                        <View style={styles.statBox}>
-                          <Text variant="titleMedium">
-                            {(
-                              Object.values(selectedUser.completions)
-                                .filter((c) => c)
-                                .reduce(
-                                  (sum, c) => sum + parseFloat(c!.value || "0"),
-                                  0
-                                ) /
-                                Object.keys(selectedUser.completions).length ||
-                              0
-                            ).toFixed(1)}
-                          </Text>
-                          <Text variant="bodySmall" style={styles.statLabel}>
-                            Average {habit.unit_label}
-                          </Text>
-                        </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.chartScrollView}
+                  >
+                    <View style={styles.lineChartContainer}>
+                      {selectedUser && (
+                        <LineChart
+                          dates={tableData.dates}
+                          userData={selectedUser}
+                          habit={habit}
+                          formatValue={formatValue}
+                          formatDate={formatDate}
+                        />
                       )}
                     </View>
-                  </View>
-                )}
+                  </ScrollView>
 
-                <Button
-                  mode="contained"
-                  onPress={() => setModalVisible(false)}
-                  style={styles.closeButton}
-                  buttonColor={theme.primaryButton}
-                  textColor={theme.primaryButtonText}
+                  <View style={styles.statsContainer}>
+                    <View style={styles.statBox}>
+                      <Text
+                        variant="titleMedium"
+                        style={{ color: theme.primaryText }}
+                      >
+                        {Object.keys(selectedUser.completions).length}
+                      </Text>
+                      <Text
+                        variant="bodySmall"
+                        style={[
+                          styles.statLabel,
+                          { color: theme.secondaryText },
+                        ]}
+                      >
+                        Total Days
+                      </Text>
+                    </View>
+
+                    {habit?.unit_type === "number" && (
+                      <View style={styles.statBox}>
+                        <Text
+                          variant="titleMedium"
+                          style={{ color: theme.primaryText }}
+                        >
+                          {(
+                            Object.values(selectedUser.completions)
+                              .filter((c) => c)
+                              .reduce(
+                                (sum, c) => sum + parseFloat(c!.value || "0"),
+                                0
+                              ) /
+                              Object.keys(selectedUser.completions).length || 0
+                          ).toFixed(1)}
+                        </Text>
+                        <Text
+                          variant="bodySmall"
+                          style={[
+                            styles.statLabel,
+                            { color: theme.secondaryText },
+                          ]}
+                        >
+                          Average {habit.unit_label}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              )}
+
+              <Button
+                mode="contained"
+                onPress={() => setModalVisible(false)}
+                style={styles.closeButton}
+                buttonColor={theme.primaryButton}
+                textColor={theme.primaryButtonText}
+              >
+                Close
+              </Button>
+            </View>
+          </Modal>
+
+          {/* Banner Modal */}
+          <Modal
+            visible={bannerModalVisible}
+            onDismiss={() => setBannerModalVisible(false)}
+            contentContainerStyle={styles.modalBackdrop}
+          >
+            <View
+              style={[
+                styles.bannerModalContainer,
+                {
+                  backgroundColor: theme.cardBackground,
+                  borderColor: theme.cardBorder,
+                },
+              ]}
+            >
+              <View style={styles.modalHeader}>
+                <Text
+                  variant="headlineSmall"
+                  style={[styles.modalTitle, { color: theme.primaryText }]}
                 >
-                  Close
-                </Button>
-              </Card.Content>
-            </Card>
+                  Schedule & Upload
+                </Text>
+                <IconButton
+                  icon="close"
+                  size={24}
+                  onPress={() => setBannerModalVisible(false)}
+                  iconColor={theme.primaryText}
+                />
+              </View>
+
+              <View style={styles.bannerModalContent}>
+                {/* Calendar Section */}
+                <Text
+                  variant="titleMedium"
+                  style={[styles.sectionTitle, { color: theme.primaryText }]}
+                >
+                  📅 Select Date Range
+                </Text>
+                <View
+                  style={[
+                    styles.calendarPlaceholder,
+                    { backgroundColor: theme.surfaceBackground, borderColor: theme.cardBorder },
+                  ]}
+                >
+                  <Text style={{ color: theme.secondaryText }}>
+                    Calendar component will go here
+                  </Text>
+                </View>
+
+                {/* Upload Section */}
+                <Text
+                  variant="titleMedium"
+                  style={[styles.sectionTitle, { color: theme.primaryText }]}
+                >
+                  📸 Upload Image
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.uploadBox,
+                    { backgroundColor: theme.surfaceBackground, borderColor: theme.cardBorder },
+                  ]}
+                >
+                  <Text style={{ color: theme.secondaryText }}>
+                    Tap to upload image
+                  </Text>
+                </TouchableOpacity>
+
+                {/* Preview Section */}
+                <Text
+                  variant="titleMedium"
+                  style={[styles.sectionTitle, { color: theme.primaryText }]}
+                >
+                  👁️ Preview
+                </Text>
+                <View
+                  style={[
+                    styles.previewBox,
+                    { backgroundColor: theme.surfaceBackground, borderColor: theme.cardBorder },
+                  ]}
+                >
+                  <Text style={{ color: theme.secondaryText }}>
+                    Image and date range preview
+                  </Text>
+                </View>
+              </View>
+
+              <Button
+                mode="contained"
+                onPress={() => setBannerModalVisible(false)}
+                style={styles.submitButton}
+                buttonColor={theme.primaryButton}
+                textColor={theme.primaryButtonText}
+              >
+                Submit
+              </Button>
+            </View>
           </Modal>
         </Portal>
       </View>
@@ -793,16 +919,7 @@ const styles = StyleSheet.create({
     width: 70, // Fixed width for consistency
     justifyContent: "center",
   },
-  tableRow: {
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.1)",
-  },
-  currentUserRow: {},
   headerText: {
-    fontWeight: "bold",
-  },
-  todayColumn: {},
-  todayHeaderText: {
     fontWeight: "bold",
   },
   userCell: {
@@ -837,16 +954,23 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
   },
-  modalContainer: {
+  modalBackdrop: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    margin: 20,
+    paddingHorizontal: 20,
+    height: Dimensions.get('screen').height + (StatusBar.currentHeight || 0),
+    width: Dimensions.get('screen').width,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    position: 'absolute',
+    top: -(StatusBar.currentHeight || 0),
+    left: 0,
   },
-  modalCard: {
-    width: "100%",
-    maxWidth: 400,
-    maxHeight: "80%",
+  modalContainer: {
+    padding: 20,
+    maxHeight: "85%",
+    borderRadius: 12,
+    borderWidth: 1,
   },
   modalHeader: {
     flexDirection: "row",
@@ -857,6 +981,9 @@ const styles = StyleSheet.create({
   modalTitle: {
     flex: 1,
     fontWeight: "bold",
+  },
+  chartScrollView: {
+    marginBottom: 16,
   },
   progressContainer: {
     marginBottom: 20,
@@ -869,7 +996,9 @@ const styles = StyleSheet.create({
   lineChartContainer: {
     paddingVertical: 20,
     paddingHorizontal: 10,
-    minHeight: 180,
+    minHeight: 160,
+    alignItems: "center",
+    justifyContent: "center",
   },
   svgContainer: {
     position: "relative",
@@ -923,8 +1052,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-around",
     marginTop: 20,
     paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: "#e0e0e0",
   },
   statBox: {
     alignItems: "center",
@@ -935,5 +1062,68 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     marginTop: 16,
+  },
+  bannerContainer: {
+    marginHorizontal: 16,
+    marginVertical: 4,
+    height: Dimensions.get('window').width * 0.25,
+    borderRadius: 12,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  bannerText: {
+    fontWeight: 'bold',
+  },
+  bannerModalContainer: {
+    padding: 24,
+    maxHeight: '90%',
+    borderRadius: 16,
+    borderWidth: 1,
+    width: '90%',
+  },
+  bannerModalContent: {
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    marginBottom: 12,
+    marginTop: 16,
+    fontWeight: 'bold',
+  },
+  calendarPlaceholder: {
+    height: 180,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  uploadBox: {
+    height: 120,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  previewBox: {
+    height: 100,
+    borderRadius: 8,
+    borderWidth: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  submitButton: {
+    marginTop: 8,
   },
 });
