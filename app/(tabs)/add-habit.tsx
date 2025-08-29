@@ -3,7 +3,7 @@ import { useCreateHabit } from "@/lib/queries";
 import { UnitType } from "@/types/database.type";
 import { useRouter } from "expo-router";
 import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
 import {
   Button,
   Chip,
@@ -72,7 +72,12 @@ export default function AddArenaScreen() {
     <GradientBackground>
       <SafeAreaView style={styles.container}>
         <AppHeader title="Add Arena" />
-        <View style={styles.content}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
           <TextInput
             label="Title"
             mode="flat"
@@ -250,7 +255,7 @@ export default function AddArenaScreen() {
           {error && (
             <Text style={{ color: timeTheme.errorColor }}>{error}</Text>
           )}
-        </View>
+        </ScrollView>
       </SafeAreaView>
     </GradientBackground>
   );
@@ -261,9 +266,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "transparent",
   },
-  content: {
+  scrollView: {
     flex: 1,
+  },
+  content: {
     paddingHorizontal: 16,
+    paddingBottom: 24,
   },
 
   input: {
@@ -309,6 +317,6 @@ const styles = StyleSheet.create({
   },
 
   submitButton: {
-    marginTop: 16,
+    marginTop: 8,
   },
 });
