@@ -318,5 +318,6 @@ const styles = StyleSheet.create({
 
   submitButton: {
     marginTop: 8,
+    marginBottom: 50,
   },
 });

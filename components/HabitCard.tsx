@@ -1,7 +1,17 @@
+import { useAuth } from "@/lib/auth-context";
+import { useCompleteHabit } from "@/lib/queries";
 import { Habit, HabitCompletion } from "@/types/database.type";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import React, { useRef, useState } from "react";
+import {
+  Alert,
+  Keyboard,
+  StyleSheet,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native";
 import { Surface, Text } from "react-native-paper";
 import { useTimeBasedTheme } from "../hooks/useTimeBasedTheme";
 
@@ -18,17 +28,88 @@ export function HabitCard({
 }: HabitCardProps) {
   const router = useRouter();
   const theme = useTimeBasedTheme();
+  const { user } = useAuth();
+  const completeHabit = useCompleteHabit();
+
+  const [inputValue, setInputValue] = useState("");
+  const [isInputFocused, setIsInputFocused] = useState(false);
+  const inputRef = useRef<TextInput>(null);
 
   const formatLastValue = (completion: HabitCompletion) => {
     return completion.display_value || completion.value || null;
   };
 
-  const handlePress = () => {
-    router.push(`/habit-records/${habit.$id}`);
+  const submitHabitCompletion = async () => {
+    if (!user || !inputValue.trim()) return;
+
+    try {
+      await completeHabit.mutateAsync({
+        habitId: habit.$id,
+        userId: user.$id,
+        value: inputValue.trim(),
+        displayValue: inputValue.trim(),
+      });
+
+      // Navigate to habit records after successful submission
+      router.push(`/habit-records/${habit.$id}`);
+
+      // Reset input
+      setInputValue("");
+      Keyboard.dismiss();
+    } catch (error) {
+      Alert.alert(
+        "Error",
+        "Failed to record habit completion. Please try again."
+      );
+      console.error("Error completing habit:", error);
+    }
+  };
+
+  const handleInputSubmit = () => {
+    if (inputValue.trim()) {
+      submitHabitCompletion();
+    }
+  };
+
+  const getInputBackgroundColor = () => {
+    if (!inputValue.trim() || !lastCompletion) {
+      return theme.surfaceBackground; // Default background
+    }
+
+    const currentValue = parseFloat(inputValue.trim());
+    const lastValue = parseFloat(lastCompletion.value || "0");
+
+    // Only compare if both values are valid numbers
+    if (!isNaN(currentValue) && !isNaN(lastValue)) {
+      if (currentValue > lastValue) {
+        return theme.successColor; // Green for improvement
+      } else if (currentValue < lastValue) {
+        return theme.errorColor; // Red for decrease
+      }
+    }
+
+    return theme.surfaceBackground; // Default background
+  };
+
+  const handleOutsidePress = () => {
+    if (isInputFocused) {
+      Keyboard.dismiss();
+      setIsInputFocused(false);
+    } else if (!inputValue.trim()) {
+      router.push(`/habit-records/${habit.$id}`);
+    }
+  };
+
+  const handleInputFocus = () => {
+    setIsInputFocused(true);
+  };
+
+  const handleInputBlur = () => {
+    setIsInputFocused(false);
   };
 
   return (
-    <TouchableOpacity onPress={handlePress} activeOpacity={0.8}>
+    <TouchableWithoutFeedback onPress={handleOutsidePress}>
       <Surface
         style={[
           styles.card,
@@ -44,30 +125,6 @@ export function HabitCard({
           <Text style={[styles.cardTitle, { color: theme.primaryText }]}>
             {habit.title}
           </Text>
-
-          {/* Show last recorded value for habits that require input */}
-          {habit.requires_input === true && lastCompletion && (
-            <View
-              style={[
-                styles.lastRecordContainer,
-                { backgroundColor: theme.surfaceBackground },
-              ]}
-            >
-              <Text
-                style={[styles.lastRecordLabel, { color: theme.successColor }]}
-              >
-                Last record:
-              </Text>
-              <Text
-                style={[
-                  styles.lastRecordValue,
-                  { color: theme.completionColor },
-                ]}
-              >
-                {formatLastValue(lastCompletion)}
-              </Text>
-            </View>
-          )}
 
           <View style={styles.cardFooter}>
             <View
@@ -122,9 +179,76 @@ export function HabitCard({
               </View>
             )}
           </View>
+
+          {/* Input box for habits that require input */}
+          {habit.requires_input === true && (
+            <View
+              style={[
+                styles.inputContainer,
+                {
+                  borderColor: isInputFocused
+                    ? theme.primaryText
+                    : `${theme.primaryText}4D`,
+                },
+              ]}
+            >
+              <TextInput
+                ref={inputRef}
+                style={[
+                  styles.input,
+                  {
+                    color: isInputFocused
+                      ? theme.primaryText
+                      : `${theme.primaryText}CC`, // 80% opacity (CC = 204 in hex)
+                  },
+                ]}
+                value={inputValue}
+                onChangeText={setInputValue}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
+                onSubmitEditing={handleInputSubmit}
+                placeholder={
+                  lastCompletion
+                    ? `Last: ${formatLastValue(lastCompletion)}`
+                    : "Add your record"
+                }
+                placeholderTextColor={
+                  isInputFocused ? theme.primaryText : `${theme.primaryText}CC` // 80% opacity
+                }
+                keyboardType={
+                  habit.unit_type === "number" ? "numeric" : "default"
+                }
+                returnKeyType="done"
+              />
+            </View>
+          )}
+
+          {/* Show last recorded value for habits that don't require input or when no input is active */}
+          {habit.requires_input !== true && lastCompletion && (
+            <View
+              style={[
+                styles.lastRecordContainer,
+                { backgroundColor: theme.surfaceBackground },
+              ]}
+            >
+              <Text
+                style={[styles.lastRecordLabel, { color: theme.successColor }]}
+              >
+                Last record:
+              </Text>
+              <Text
+                style={[
+                  styles.lastRecordValue,
+                  { color: theme.completionColor },
+                ]}
+              >
+                {formatLastValue(lastCompletion)}
+              </Text>
+            </View>
+          )}
         </View>
       </Surface>
-    </TouchableOpacity>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -143,16 +267,15 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   cardContent: {
-    padding: 20,
+    padding: 16,
+    gap: 16,
   },
   cardTitle: {
     fontSize: 18,
     fontWeight: "600",
-    marginBottom: 8,
   },
   cardDescription: {
     fontSize: 14,
-    marginBottom: 16,
     lineHeight: 20,
   },
   cardFooter: {
@@ -184,7 +307,6 @@ const styles = StyleSheet.create({
   lastRecordContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
@@ -209,5 +331,18 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontWeight: "500",
     fontSize: 12,
+  },
+  inputContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  input: {
+    fontSize: 14,
+    fontWeight: "500",
+    minHeight: 20,
+    paddingVertical: 0,
+    textAlign: "center",
   },
 });
