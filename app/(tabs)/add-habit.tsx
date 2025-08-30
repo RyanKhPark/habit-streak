@@ -5,6 +5,10 @@ import { useRouter } from "expo-router";
 import React, { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import {
   Button,
   Chip,
   SegmentedButtons,
@@ -12,7 +16,6 @@ import {
   Text,
   TextInput,
 } from "react-native-paper";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "../../components/AppHeader";
 import { GradientBackground } from "../../components/GradientBackground";
 import { useTimeBasedTheme } from "../../hooks/useTimeBasedTheme";
@@ -40,6 +43,7 @@ export default function AddArenaScreen() {
   const router = useRouter();
   const theme = useTimeBasedTheme();
   const createHabit = useCreateHabit();
+  const insets = useSafeAreaInsets();
 
   const handleSubmit = async () => {
     if (!user) return;
@@ -70,11 +74,10 @@ export default function AddArenaScreen() {
 
   return (
     <GradientBackground>
-      <SafeAreaView style={styles.container}>
-        <AppHeader title="Add Arena" />
+      <SafeAreaView style={styles.container} edges={['bottom', 'left', 'right']}>
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingTop: insets.top + 80 }]}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -251,6 +254,7 @@ export default function AddArenaScreen() {
           </Button>
           {error && <Text style={{ color: theme.errorColor }}>{error}</Text>}
         </ScrollView>
+        <AppHeader title="Add Arena" fixed />
       </SafeAreaView>
     </GradientBackground>
   );
