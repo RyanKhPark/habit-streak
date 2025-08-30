@@ -38,7 +38,7 @@ export default function AddArenaScreen() {
   const [error, setError] = useState<string>("");
   const { user } = useAuth();
   const router = useRouter();
-  const timeTheme = useTimeBasedTheme();
+  const theme = useTimeBasedTheme();
   const createHabit = useCreateHabit();
 
   const handleSubmit = async () => {
@@ -84,18 +84,18 @@ export default function AddArenaScreen() {
             value={title}
             onChangeText={setTitle}
             style={styles.input}
-            textColor={timeTheme.primaryText}
-            placeholderTextColor={timeTheme.placeholderText}
-            underlineColor={timeTheme.inputBorder}
-            activeUnderlineColor={timeTheme.primaryButton}
+            textColor={theme.primaryText}
+            placeholderTextColor={theme.placeholderText}
+            underlineColor={theme.inputBorder}
+            activeUnderlineColor={theme.primaryButton}
             theme={{
               colors: {
-                onSurfaceVariant: timeTheme.primaryText,
-                primary: timeTheme.primaryButton,
-                surfaceVariant: timeTheme.inputBackground,
-                background: timeTheme.inputBackground,
-                surface: timeTheme.inputBackground,
-                onSurface: timeTheme.primaryText,
+                onSurfaceVariant: theme.primaryText,
+                primary: theme.primaryButton,
+                surfaceVariant: theme.inputBackground,
+                background: theme.inputBackground,
+                surface: theme.inputBackground,
+                onSurface: theme.primaryText,
               },
             }}
           />
@@ -105,18 +105,18 @@ export default function AddArenaScreen() {
             value={description}
             onChangeText={setDescription}
             style={styles.input}
-            textColor={timeTheme.primaryText}
-            placeholderTextColor={timeTheme.placeholderText}
-            underlineColor={timeTheme.inputBorder}
-            activeUnderlineColor={timeTheme.primaryButton}
+            textColor={theme.primaryText}
+            placeholderTextColor={theme.placeholderText}
+            underlineColor={theme.inputBorder}
+            activeUnderlineColor={theme.primaryButton}
             theme={{
               colors: {
-                onSurfaceVariant: timeTheme.primaryText,
-                primary: timeTheme.primaryButton,
-                surfaceVariant: timeTheme.inputBackground,
-                background: timeTheme.inputBackground,
-                surface: timeTheme.inputBackground,
-                onSurface: timeTheme.primaryText,
+                onSurfaceVariant: theme.primaryText,
+                primary: theme.primaryButton,
+                surfaceVariant: theme.inputBackground,
+                background: theme.inputBackground,
+                surface: theme.inputBackground,
+                onSurface: theme.primaryText,
               },
             }}
           />
@@ -124,7 +124,7 @@ export default function AddArenaScreen() {
           <View style={styles.frequencyContainer}>
             <Text
               variant="titleMedium"
-              style={[styles.sectionTitle, { color: timeTheme.primaryText }]}
+              style={[styles.sectionTitle, { color: theme.primaryText }]}
             >
               Frequency
             </Text>
@@ -141,7 +141,7 @@ export default function AddArenaScreen() {
           <View style={styles.unitTypeContainer}>
             <Text
               variant="titleMedium"
-              style={[styles.sectionTitle, { color: timeTheme.primaryText }]}
+              style={[styles.sectionTitle, { color: theme.primaryText }]}
             >
               How to track progress?
             </Text>
@@ -162,10 +162,7 @@ export default function AddArenaScreen() {
             </View>
             <Text
               variant="bodySmall"
-              style={[
-                styles.unitDescription,
-                { color: timeTheme.secondaryText },
-              ]}
+              style={[styles.unitDescription, { color: theme.secondaryText }]}
             >
               {UNIT_TYPES.find((t) => t.value === unitType)?.description}
             </Text>
@@ -178,18 +175,18 @@ export default function AddArenaScreen() {
               value={unitLabel}
               onChangeText={setUnitLabel}
               style={styles.input}
-              textColor={timeTheme.primaryText}
-              placeholderTextColor={timeTheme.placeholderText}
-              underlineColor={timeTheme.inputBorder}
-              activeUnderlineColor={timeTheme.primaryButton}
+              textColor={theme.primaryText}
+              placeholderTextColor={theme.placeholderText}
+              underlineColor={theme.inputBorder}
+              activeUnderlineColor={theme.primaryButton}
               theme={{
                 colors: {
-                  onSurfaceVariant: timeTheme.primaryText,
-                  primary: timeTheme.primaryButton,
-                  surfaceVariant: timeTheme.inputBackground,
-                  background: timeTheme.inputBackground,
-                  surface: timeTheme.inputBackground,
-                  onSurface: timeTheme.primaryText,
+                  onSurfaceVariant: theme.primaryText,
+                  primary: theme.primaryButton,
+                  surfaceVariant: theme.inputBackground,
+                  background: theme.inputBackground,
+                  surface: theme.inputBackground,
+                  onSurface: theme.primaryText,
                 },
               }}
             />
@@ -210,33 +207,33 @@ export default function AddArenaScreen() {
                 : "Daily reflection"
             }
             style={styles.input}
-            textColor={timeTheme.primaryText}
-            placeholderTextColor={timeTheme.placeholderText}
-            underlineColor={timeTheme.inputBorder}
-            activeUnderlineColor={timeTheme.primaryButton}
+            textColor={theme.primaryText}
+            placeholderTextColor={theme.placeholderText}
+            underlineColor={theme.inputBorder}
+            activeUnderlineColor={theme.primaryButton}
             theme={{
               colors: {
-                onSurfaceVariant: timeTheme.primaryText,
-                primary: timeTheme.primaryButton,
-                surfaceVariant: timeTheme.inputBackground,
-                background: timeTheme.inputBackground,
-                surface: timeTheme.inputBackground,
-                onSurface: timeTheme.primaryText,
+                onSurfaceVariant: theme.primaryText,
+                primary: theme.primaryButton,
+                surfaceVariant: theme.inputBackground,
+                background: theme.inputBackground,
+                surface: theme.inputBackground,
+                onSurface: theme.primaryText,
               },
             }}
           />
 
           <View style={styles.switchContainer}>
-            <Text variant="bodyMedium" style={{ color: timeTheme.primaryText }}>
+            <Text variant="bodyMedium" style={{ color: theme.primaryText }}>
               Requires input when completing
             </Text>
             <Switch
               value={requiresInput}
               onValueChange={setRequiresInput}
-              thumbColor={timeTheme.primaryButton}
+              thumbColor={theme.primaryButton}
               trackColor={{
-                true: timeTheme.accentColor,
-                false: timeTheme.secondaryButton,
+                true: theme.accentColor,
+                false: theme.secondaryButton,
               }}
             />
           </View>
@@ -247,14 +244,12 @@ export default function AddArenaScreen() {
             disabled={!title || !description || createHabit.isPending}
             loading={createHabit.isPending}
             style={styles.submitButton}
-            buttonColor={timeTheme.primaryButton}
-            textColor={timeTheme.primaryButtonText}
           >
-            Add Arena
+            <Text variant="titleMedium" style={{ color: theme.primaryText }}>
+              Add Arena
+            </Text>
           </Button>
-          {error && (
-            <Text style={{ color: timeTheme.errorColor }}>{error}</Text>
-          )}
+          {error && <Text style={{ color: theme.errorColor }}>{error}</Text>}
         </ScrollView>
       </SafeAreaView>
     </GradientBackground>
