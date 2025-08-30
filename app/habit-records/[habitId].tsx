@@ -6,7 +6,7 @@ import {
 } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
 import { Habit, HabitCompletion } from "@/types/database.type";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
   Dimensions,
@@ -28,6 +28,7 @@ import {
   Portal,
   Text,
 } from "react-native-paper";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { GradientBackground } from "../../components/GradientBackground";
 import { useTimeBasedTheme } from "../../hooks/useTimeBasedTheme";
 
@@ -44,6 +45,7 @@ interface TableData {
 export default function HabitRecordsScreen() {
   const { habitId } = useLocalSearchParams<{ habitId: string }>();
   const { user } = useAuth();
+  const router = useRouter();
   const theme = useTimeBasedTheme();
 
   const [habit, setHabit] = useState<Habit | null>(null);
@@ -378,332 +380,337 @@ export default function HabitRecordsScreen() {
   if (loading) {
     return (
       <GradientBackground>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.primaryButton} />
-          <Text style={[styles.loadingText, { color: theme.primaryText }]}>
-            Loading records...
-          </Text>
-        </View>
+        <SafeAreaView style={{ flex: 1 }}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.primaryButton} />
+            <Text style={[styles.loadingText, { color: theme.primaryText }]}>
+              Loading records...
+            </Text>
+          </View>
+        </SafeAreaView>
       </GradientBackground>
     );
   }
 
   return (
     <GradientBackground>
-      <View style={styles.container}>
-        <Card
-          style={[
-            styles.headerCard,
-            {
-              backgroundColor: theme.cardBackground,
-              borderColor: theme.cardBorder,
-            },
-          ]}
+      <SafeAreaView style={{ flex: 1 }}>
+        {/* Custom Header */}
+        <View
+          style={[styles.customHeader, { borderBottomColor: theme.cardBorder }]}
         >
-          <Card.Content>
-            <Text
-              variant="headlineSmall"
-              style={[styles.arenaTitle, { color: theme.primaryText }]}
-            >
-              {habit?.title}
-            </Text>
-            <Text
-              variant="bodyMedium"
-              style={[styles.arenaDescription, { color: theme.secondaryText }]}
-            >
-              {habit?.description}
-            </Text>
-            <Text
-              variant="bodySmall"
-              style={[styles.sharedInfo, { color: theme.accentColor }]}
-            >
-              🌟 Shared with {tableData.users.length} participants
-            </Text>
-
-            <View style={styles.filterContainer}>
-              {(["today", "week", "month", "all"] as const).map((filter) => (
-                <Chip
-                  key={filter}
-                  selected={timeFilter === filter}
-                  onPress={() => setTimeFilter(filter)}
-                  style={styles.filterChip}
-                >
-                  {filter.charAt(0).toUpperCase() + filter.slice(1)}
-                </Chip>
-              ))}
-            </View>
-          </Card.Content>
-        </Card>
-
-        {/* Banner Component */}
-        <TouchableOpacity
-          onPress={() => setBannerModalVisible(true)}
-          style={[
-            styles.bannerContainer,
-            {
-              backgroundColor: theme.cardBackground,
-              borderColor: theme.cardBorder,
-            },
-          ]}
-        >
+          <IconButton
+            icon="arrow-left"
+            size={24}
+            onPress={() => router.back()}
+            iconColor={theme.primaryText}
+          />
           <Text
-            variant="bodyMedium"
-            style={[styles.bannerText, { color: theme.primaryText }]}
+            variant="titleLarge"
+            style={[styles.headerTitle, { color: theme.primaryText }]}
           >
-            {Dimensions.get('window').width.toFixed(0)} × {(Dimensions.get('window').width * 0.25).toFixed(0)}
+            {habit?.title || "Loading..."}
           </Text>
-        </TouchableOpacity>
-
-        <Card
-          style={[
-            styles.tableCard,
-            {
-              backgroundColor: theme.cardBackground,
-              borderColor: theme.cardBorder,
-            },
-          ]}
-        >
-          <Card.Content>
-            <ScrollView
-              ref={scrollViewRef}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-            >
-              <View
+          <View style={styles.headerSpacer} />
+        </View>
+        <View style={styles.container}>
+          <Card
+            style={[
+              styles.headerCard,
+              {
+                backgroundColor: theme.cardBackground,
+                borderColor: theme.cardBorder,
+              },
+            ]}
+          >
+            <Card.Content>
+              <Text
+                variant="headlineSmall"
+                style={[styles.arenaTitle, { color: theme.primaryText }]}
+              >
+                {habit?.title}
+              </Text>
+              <Text
+                variant="bodyMedium"
                 style={[
-                  styles.customTable,
-                  { minWidth: 150 + tableData.dates.length * 70 },
+                  styles.arenaDescription,
+                  { color: theme.secondaryText },
                 ]}
               >
-                {/* Custom Table Header */}
+                {habit?.description}
+              </Text>
+              <Text
+                variant="bodySmall"
+                style={[styles.sharedInfo, { color: theme.accentColor }]}
+              >
+                🌟 Shared with {tableData.users.length} participants
+              </Text>
+
+              <View style={styles.filterContainer}>
+                {(["today", "week", "month", "all"] as const).map((filter) => (
+                  <Chip
+                    key={filter}
+                    selected={timeFilter === filter}
+                    onPress={() => setTimeFilter(filter)}
+                    style={styles.filterChip}
+                  >
+                    {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                  </Chip>
+                ))}
+              </View>
+            </Card.Content>
+          </Card>
+
+          {/* Banner Component */}
+          <TouchableOpacity
+            onPress={() => setBannerModalVisible(true)}
+            style={[
+              styles.bannerContainer,
+              {
+                backgroundColor: theme.cardBackground,
+                borderColor: theme.cardBorder,
+              },
+            ]}
+          >
+            <Text
+              variant="bodyMedium"
+              style={[styles.bannerText, { color: theme.primaryText }]}
+            >
+              {Dimensions.get("window").width.toFixed(0)} ×{" "}
+              {(Dimensions.get("window").width * 0.25).toFixed(0)}
+            </Text>
+          </TouchableOpacity>
+
+          <Card
+            style={[
+              styles.tableCard,
+              {
+                backgroundColor: theme.cardBackground,
+                borderColor: theme.cardBorder,
+              },
+            ]}
+          >
+            <Card.Content>
+              <ScrollView
+                ref={scrollViewRef}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+              >
                 <View
                   style={[
-                    styles.customTableHeader,
-                    { backgroundColor: theme.primaryButton },
+                    styles.customTable,
+                    { minWidth: 150 + tableData.dates.length * 70 },
                   ]}
                 >
-                  <View style={[styles.customHeaderCell, styles.userColumn]}>
-                    <Text
-                      variant="titleSmall"
-                      style={[
-                        styles.headerText,
-                        { color: theme.primaryButtonText },
-                      ]}
-                    >
-                      Member
-                    </Text>
-                  </View>
-                  {tableData.dates.map((date) => {
-                    const isToday = date === getTodayString();
-                    return (
-                      <View
-                        key={`header-${date}`}
+                  {/* Custom Table Header */}
+                  <View
+                    style={[
+                      styles.customTableHeader,
+                      { backgroundColor: theme.primaryButton },
+                    ]}
+                  >
+                    <View style={[styles.customHeaderCell, styles.userColumn]}>
+                      <Text
+                        variant="titleSmall"
                         style={[
-                          styles.customHeaderCell,
-                          styles.dateColumn,
-                          isToday && { backgroundColor: theme.accentColor },
+                          styles.headerText,
+                          { color: theme.primaryButtonText },
                         ]}
                       >
-                        <Text
-                          variant="bodySmall"
+                        Member
+                      </Text>
+                    </View>
+                    {tableData.dates.map((date) => {
+                      const isToday = date === getTodayString();
+                      return (
+                        <View
+                          key={`header-${date}`}
                           style={[
-                            styles.headerText,
-                            { color: theme.primaryText },
-                            isToday && { color: theme.primaryButtonText },
+                            styles.customHeaderCell,
+                            styles.dateColumn,
+                            isToday && { backgroundColor: theme.accentColor },
                           ]}
                         >
-                          {formatDate(date)}
-                        </Text>
+                          <Text
+                            variant="bodySmall"
+                            style={[
+                              styles.headerText,
+                              { color: theme.primaryText },
+                              isToday && { color: theme.primaryButtonText },
+                            ]}
+                          >
+                            {formatDate(date)}
+                          </Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+
+                  {/* Custom Table Rows */}
+                  {tableData.users.map((userData) => {
+                    const isCurrentUser = userData.user_id === user?.$id;
+                    return (
+                      <View
+                        key={userData.user_id}
+                        style={[
+                          styles.customTableRow,
+                          { backgroundColor: theme.surfaceBackground },
+                          isCurrentUser && {
+                            backgroundColor: theme.accentColor,
+                          },
+                        ]}
+                      >
+                        <TouchableOpacity
+                          style={[styles.customCell, styles.userColumn]}
+                          onPress={() => handleUserPress(userData)}
+                        >
+                          <View style={styles.userCell}>
+                            <Avatar.Text
+                              size={24}
+                              label={userData.user_name.charAt(0).toUpperCase()}
+                              style={[
+                                styles.smallAvatar,
+                                { backgroundColor: theme.primaryButton },
+                              ]}
+                              labelStyle={{ color: theme.primaryButtonText }}
+                            />
+                            <Text
+                              variant="bodyMedium"
+                              style={[
+                                styles.userNameText,
+                                {
+                                  color: isCurrentUser
+                                    ? theme.primaryButtonText
+                                    : theme.primaryText,
+                                },
+                              ]}
+                            >
+                              {userData.user_name}
+                              {isCurrentUser && " (You)"}
+                            </Text>
+                          </View>
+                        </TouchableOpacity>
+                        {tableData.dates.map((date) => {
+                          const completion = userData.completions[date];
+                          const isToday = date === getTodayString();
+                          const hasCompletedToday = isToday && completion;
+
+                          return (
+                            <View
+                              key={`${userData.user_id}-${date}`}
+                              style={[
+                                styles.customCell,
+                                styles.dateColumn,
+                                isToday && {
+                                  backgroundColor: theme.accentColor,
+                                },
+                              ]}
+                            >
+                              <View style={styles.cellContainer}>
+                                <Text
+                                  variant="bodySmall"
+                                  style={[
+                                    styles.cellValue,
+                                    {
+                                      color: isToday
+                                        ? theme.primaryButtonText
+                                        : theme.primaryText,
+                                    },
+                                  ]}
+                                >
+                                  {formatValue(completion) || "-"}
+                                </Text>
+                                {hasCompletedToday && (
+                                  <View
+                                    style={[
+                                      styles.todayDot,
+                                      { backgroundColor: theme.successColor },
+                                    ]}
+                                  />
+                                )}
+                              </View>
+                            </View>
+                          );
+                        })}
                       </View>
                     );
                   })}
                 </View>
+              </ScrollView>
+            </Card.Content>
+          </Card>
 
-                {/* Custom Table Rows */}
-                {tableData.users.map((userData) => {
-                  const isCurrentUser = userData.user_id === user?.$id;
-                  return (
-                    <View
-                      key={userData.user_id}
+          <Portal>
+            <Modal
+              visible={modalVisible}
+              onDismiss={() => setModalVisible(false)}
+              contentContainerStyle={styles.modalBackdrop}
+            >
+              <View
+                style={[
+                  styles.modalContainer,
+                  {
+                    backgroundColor: theme.cardBackground,
+                    borderColor: theme.cardBorder,
+                    width: Math.min(
+                      150 + tableData.dates.length * 70,
+                      Dimensions.get("window").width - 32
+                    ),
+                  },
+                ]}
+              >
+                <View style={styles.modalHeader}>
+                  <Text
+                    variant="headlineSmall"
+                    style={[styles.modalTitle, { color: theme.primaryText }]}
+                  >
+                    {selectedUser?.user_name}&apos;s Progress
+                  </Text>
+                  <IconButton
+                    icon="close"
+                    size={24}
+                    onPress={() => setModalVisible(false)}
+                    iconColor={theme.primaryText}
+                  />
+                </View>
+
+                {selectedUser && (
+                  <View style={styles.progressContainer}>
+                    <Text
+                      variant="titleMedium"
                       style={[
-                        styles.customTableRow,
-                        { backgroundColor: theme.surfaceBackground },
-                        isCurrentUser && { backgroundColor: theme.accentColor },
+                        styles.progressTitle,
+                        { color: theme.primaryText },
                       ]}
                     >
-                      <TouchableOpacity
-                        style={[styles.customCell, styles.userColumn]}
-                        onPress={() => handleUserPress(userData)}
-                      >
-                        <View style={styles.userCell}>
-                          <Avatar.Text
-                            size={24}
-                            label={userData.user_name.charAt(0).toUpperCase()}
-                            style={[
-                              styles.smallAvatar,
-                              { backgroundColor: theme.primaryButton },
-                            ]}
-                            labelStyle={{ color: theme.primaryButtonText }}
+                      Recent Activity
+                    </Text>
+
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.chartScrollView}
+                    >
+                      <View style={styles.lineChartContainer}>
+                        {selectedUser && (
+                          <LineChart
+                            dates={tableData.dates}
+                            userData={selectedUser}
+                            habit={habit}
+                            formatValue={formatValue}
+                            formatDate={formatDate}
                           />
-                          <Text
-                            variant="bodyMedium"
-                            style={[
-                              styles.userNameText,
-                              {
-                                color: isCurrentUser
-                                  ? theme.primaryButtonText
-                                  : theme.primaryText,
-                              },
-                            ]}
-                          >
-                            {userData.user_name}
-                            {isCurrentUser && " (You)"}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                      {tableData.dates.map((date) => {
-                        const completion = userData.completions[date];
-                        const isToday = date === getTodayString();
-                        const hasCompletedToday = isToday && completion;
+                        )}
+                      </View>
+                    </ScrollView>
 
-                        return (
-                          <View
-                            key={`${userData.user_id}-${date}`}
-                            style={[
-                              styles.customCell,
-                              styles.dateColumn,
-                              isToday && { backgroundColor: theme.accentColor },
-                            ]}
-                          >
-                            <View style={styles.cellContainer}>
-                              <Text
-                                variant="bodySmall"
-                                style={[
-                                  styles.cellValue,
-                                  {
-                                    color: isToday
-                                      ? theme.primaryButtonText
-                                      : theme.primaryText,
-                                  },
-                                ]}
-                              >
-                                {formatValue(completion) || "-"}
-                              </Text>
-                              {hasCompletedToday && (
-                                <View
-                                  style={[
-                                    styles.todayDot,
-                                    { backgroundColor: theme.successColor },
-                                  ]}
-                                />
-                              )}
-                            </View>
-                          </View>
-                        );
-                      })}
-                    </View>
-                  );
-                })}
-              </View>
-            </ScrollView>
-          </Card.Content>
-        </Card>
-
-        <Portal>
-          <Modal
-            visible={modalVisible}
-            onDismiss={() => setModalVisible(false)}
-            contentContainerStyle={styles.modalBackdrop}
-          >
-            <View
-              style={[
-                styles.modalContainer,
-                {
-                  backgroundColor: theme.cardBackground,
-                  borderColor: theme.cardBorder,
-                  width: Math.min(
-                    150 + tableData.dates.length * 70,
-                    Dimensions.get("window").width - 32
-                  ),
-                },
-              ]}
-            >
-              <View style={styles.modalHeader}>
-                <Text
-                  variant="headlineSmall"
-                  style={[styles.modalTitle, { color: theme.primaryText }]}
-                >
-                  {selectedUser?.user_name}&apos;s Progress
-                </Text>
-                <IconButton
-                  icon="close"
-                  size={24}
-                  onPress={() => setModalVisible(false)}
-                  iconColor={theme.primaryText}
-                />
-              </View>
-
-              {selectedUser && (
-                <View style={styles.progressContainer}>
-                  <Text
-                    variant="titleMedium"
-                    style={[styles.progressTitle, { color: theme.primaryText }]}
-                  >
-                    Recent Activity
-                  </Text>
-
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    style={styles.chartScrollView}
-                  >
-                    <View style={styles.lineChartContainer}>
-                      {selectedUser && (
-                        <LineChart
-                          dates={tableData.dates}
-                          userData={selectedUser}
-                          habit={habit}
-                          formatValue={formatValue}
-                          formatDate={formatDate}
-                        />
-                      )}
-                    </View>
-                  </ScrollView>
-
-                  <View style={styles.statsContainer}>
-                    <View style={styles.statBox}>
-                      <Text
-                        variant="titleMedium"
-                        style={{ color: theme.primaryText }}
-                      >
-                        {Object.keys(selectedUser.completions).length}
-                      </Text>
-                      <Text
-                        variant="bodySmall"
-                        style={[
-                          styles.statLabel,
-                          { color: theme.secondaryText },
-                        ]}
-                      >
-                        Total Days
-                      </Text>
-                    </View>
-
-                    {habit?.unit_type === "number" && (
+                    <View style={styles.statsContainer}>
                       <View style={styles.statBox}>
                         <Text
                           variant="titleMedium"
                           style={{ color: theme.primaryText }}
                         >
-                          {(
-                            Object.values(selectedUser.completions)
-                              .filter((c) => c)
-                              .reduce(
-                                (sum, c) => sum + parseFloat(c!.value || "0"),
-                                0
-                              ) /
-                              Object.keys(selectedUser.completions).length || 0
-                          ).toFixed(1)}
+                          {Object.keys(selectedUser.completions).length}
                         </Text>
                         <Text
                           variant="bodySmall"
@@ -712,130 +719,181 @@ export default function HabitRecordsScreen() {
                             { color: theme.secondaryText },
                           ]}
                         >
-                          Average {habit.unit_label}
+                          Total Days
                         </Text>
                       </View>
-                    )}
+
+                      {habit?.unit_type === "number" && (
+                        <View style={styles.statBox}>
+                          <Text
+                            variant="titleMedium"
+                            style={{ color: theme.primaryText }}
+                          >
+                            {(
+                              Object.values(selectedUser.completions)
+                                .filter((c) => c)
+                                .reduce(
+                                  (sum, c) => sum + parseFloat(c!.value || "0"),
+                                  0
+                                ) /
+                                Object.keys(selectedUser.completions).length ||
+                              0
+                            ).toFixed(1)}
+                          </Text>
+                          <Text
+                            variant="bodySmall"
+                            style={[
+                              styles.statLabel,
+                              { color: theme.secondaryText },
+                            ]}
+                          >
+                            Average {habit.unit_label}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                )}
+
+                <Button
+                  mode="contained"
+                  onPress={() => setModalVisible(false)}
+                  style={styles.closeButton}
+                  buttonColor={theme.primaryButton}
+                  textColor={theme.primaryButtonText}
+                >
+                  Close
+                </Button>
+              </View>
+            </Modal>
+
+            {/* Banner Modal */}
+            <Modal
+              visible={bannerModalVisible}
+              onDismiss={() => setBannerModalVisible(false)}
+              contentContainerStyle={styles.modalBackdrop}
+            >
+              <View
+                style={[
+                  styles.bannerModalContainer,
+                  {
+                    backgroundColor: theme.cardBackground,
+                    borderColor: theme.cardBorder,
+                  },
+                ]}
+              >
+                <View style={styles.modalHeader}>
+                  <Text
+                    variant="headlineSmall"
+                    style={[styles.modalTitle, { color: theme.primaryText }]}
+                  >
+                    Schedule & Upload
+                  </Text>
+                  <IconButton
+                    icon="close"
+                    size={24}
+                    onPress={() => setBannerModalVisible(false)}
+                    iconColor={theme.primaryText}
+                  />
+                </View>
+
+                <View style={styles.bannerModalContent}>
+                  {/* Calendar Section */}
+                  <Text
+                    variant="titleMedium"
+                    style={[styles.sectionTitle, { color: theme.primaryText }]}
+                  >
+                    📅 Select Date Range
+                  </Text>
+                  <View
+                    style={[
+                      styles.calendarPlaceholder,
+                      {
+                        backgroundColor: theme.surfaceBackground,
+                        borderColor: theme.cardBorder,
+                      },
+                    ]}
+                  >
+                    <Text style={{ color: theme.secondaryText }}>
+                      Calendar component will go here
+                    </Text>
+                  </View>
+
+                  {/* Upload Section */}
+                  <Text
+                    variant="titleMedium"
+                    style={[styles.sectionTitle, { color: theme.primaryText }]}
+                  >
+                    📸 Upload Image
+                  </Text>
+                  <TouchableOpacity
+                    style={[
+                      styles.uploadBox,
+                      {
+                        backgroundColor: theme.surfaceBackground,
+                        borderColor: theme.cardBorder,
+                      },
+                    ]}
+                  >
+                    <Text style={{ color: theme.secondaryText }}>
+                      Tap to upload image
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Preview Section */}
+                  <Text
+                    variant="titleMedium"
+                    style={[styles.sectionTitle, { color: theme.primaryText }]}
+                  >
+                    👁️ Preview
+                  </Text>
+                  <View
+                    style={[
+                      styles.previewBox,
+                      {
+                        backgroundColor: theme.surfaceBackground,
+                        borderColor: theme.cardBorder,
+                      },
+                    ]}
+                  >
+                    <Text style={{ color: theme.secondaryText }}>
+                      Image and date range preview
+                    </Text>
                   </View>
                 </View>
-              )}
 
-              <Button
-                mode="contained"
-                onPress={() => setModalVisible(false)}
-                style={styles.closeButton}
-                buttonColor={theme.primaryButton}
-                textColor={theme.primaryButtonText}
-              >
-                Close
-              </Button>
-            </View>
-          </Modal>
-
-          {/* Banner Modal */}
-          <Modal
-            visible={bannerModalVisible}
-            onDismiss={() => setBannerModalVisible(false)}
-            contentContainerStyle={styles.modalBackdrop}
-          >
-            <View
-              style={[
-                styles.bannerModalContainer,
-                {
-                  backgroundColor: theme.cardBackground,
-                  borderColor: theme.cardBorder,
-                },
-              ]}
-            >
-              <View style={styles.modalHeader}>
-                <Text
-                  variant="headlineSmall"
-                  style={[styles.modalTitle, { color: theme.primaryText }]}
-                >
-                  Schedule & Upload
-                </Text>
-                <IconButton
-                  icon="close"
-                  size={24}
+                <Button
+                  mode="contained"
                   onPress={() => setBannerModalVisible(false)}
-                  iconColor={theme.primaryText}
-                />
+                  style={styles.submitButton}
+                  buttonColor={theme.primaryButton}
+                  textColor={theme.primaryButtonText}
+                >
+                  Submit
+                </Button>
               </View>
-
-              <View style={styles.bannerModalContent}>
-                {/* Calendar Section */}
-                <Text
-                  variant="titleMedium"
-                  style={[styles.sectionTitle, { color: theme.primaryText }]}
-                >
-                  📅 Select Date Range
-                </Text>
-                <View
-                  style={[
-                    styles.calendarPlaceholder,
-                    { backgroundColor: theme.surfaceBackground, borderColor: theme.cardBorder },
-                  ]}
-                >
-                  <Text style={{ color: theme.secondaryText }}>
-                    Calendar component will go here
-                  </Text>
-                </View>
-
-                {/* Upload Section */}
-                <Text
-                  variant="titleMedium"
-                  style={[styles.sectionTitle, { color: theme.primaryText }]}
-                >
-                  📸 Upload Image
-                </Text>
-                <TouchableOpacity
-                  style={[
-                    styles.uploadBox,
-                    { backgroundColor: theme.surfaceBackground, borderColor: theme.cardBorder },
-                  ]}
-                >
-                  <Text style={{ color: theme.secondaryText }}>
-                    Tap to upload image
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Preview Section */}
-                <Text
-                  variant="titleMedium"
-                  style={[styles.sectionTitle, { color: theme.primaryText }]}
-                >
-                  👁️ Preview
-                </Text>
-                <View
-                  style={[
-                    styles.previewBox,
-                    { backgroundColor: theme.surfaceBackground, borderColor: theme.cardBorder },
-                  ]}
-                >
-                  <Text style={{ color: theme.secondaryText }}>
-                    Image and date range preview
-                  </Text>
-                </View>
-              </View>
-
-              <Button
-                mode="contained"
-                onPress={() => setBannerModalVisible(false)}
-                style={styles.submitButton}
-                buttonColor={theme.primaryButton}
-                textColor={theme.primaryButtonText}
-              >
-                Submit
-              </Button>
-            </View>
-          </Modal>
-        </Portal>
-      </View>
+            </Modal>
+          </Portal>
+        </View>
+      </SafeAreaView>
     </GradientBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  customHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: "center",
+    fontWeight: "bold",
+  },
+  headerSpacer: {
+    width: 48,
+  },
   container: {
     flex: 1,
     backgroundColor: "transparent",
@@ -959,10 +1017,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
-    height: Dimensions.get('screen').height + (StatusBar.currentHeight || 0),
-    width: Dimensions.get('screen').width,
+    height: Dimensions.get("screen").height + (StatusBar.currentHeight || 0),
+    width: Dimensions.get("screen").width,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
-    position: 'absolute',
+    position: "absolute",
     top: -(StatusBar.currentHeight || 0),
     left: 0,
   },
@@ -1066,13 +1124,13 @@ const styles = StyleSheet.create({
   bannerContainer: {
     marginHorizontal: 16,
     marginVertical: 4,
-    height: Dimensions.get('window').width * 0.25,
+    height: Dimensions.get("window").width * 0.25,
     borderRadius: 12,
     borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 1,
@@ -1081,14 +1139,14 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   bannerText: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   bannerModalContainer: {
     padding: 24,
-    maxHeight: '90%',
+    maxHeight: "90%",
     borderRadius: 16,
     borderWidth: 1,
-    width: '90%',
+    width: "90%",
   },
   bannerModalContent: {
     marginBottom: 20,
@@ -1096,31 +1154,31 @@ const styles = StyleSheet.create({
   sectionTitle: {
     marginBottom: 12,
     marginTop: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   calendarPlaceholder: {
     height: 180,
     borderRadius: 8,
     borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 8,
   },
   uploadBox: {
     height: 120,
     borderRadius: 8,
     borderWidth: 2,
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 8,
   },
   previewBox: {
     height: 100,
     borderRadius: 8,
     borderWidth: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 8,
   },
   submitButton: {

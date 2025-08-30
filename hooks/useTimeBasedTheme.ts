@@ -107,10 +107,66 @@ const getTimeBasedTheme = (): TimeBasedTheme => {
   }
 
   // Evening: 18:00-23:59 - Warm, cozy, relaxing colors
+  // if (hour >= 18 && hour < 24) {
+  //   return {
+  //     gradientColors: ["#9F8A82", "#514357"],
+  //     cardBackground: "rgba(81, 67, 87, 0.9)",
+  //     cardBorder: "rgba(159, 138, 130, 0.6)",
+  //     surfaceBackground: "rgba(81, 67, 87, 0.7)",
+  //     primaryText: "#F5F5F5",
+  //     secondaryText: "#CCCCCC",
+  //     headerText: "#F5F5F5",
+  //     primaryButton: "#9F8A82",
+  //     primaryButtonText: "#FFFFFF",
+  //     secondaryButton: "rgba(159, 138, 130, 0.3)",
+  //     secondaryButtonText: "#9F8A82",
+  //     tabBarBackground: "rgba(81, 67, 87, 0.95)",
+  //     activeTabColor: "#9F8A82",
+  //     inactiveTabColor: "#AAAAAA",
+  //     successColor: "#82A582",
+  //     warningColor: "#A59982",
+  //     errorColor: "#A58282",
+  //     accentColor: "#8A7B82",
+  //     inputBackground: "rgba(81, 67, 87, 0.8)",
+  //     inputBorder: "rgba(159, 138, 130, 0.4)",
+  //     placeholderText: "#AAAAAA",
+  //     progressColor: "#9F8A82",
+  //     completionColor: "#82A582",
+  //     streakColor: "#8A7B82",
+  //   };
+  // }
+
+  // // Dawn/Night: 00:00-05:59 - Deep, calm, mysterious colors
+  // return {
+  //   gradientColors: ["#373243", "#574C43"],
+  //   cardBackground: "rgba(87, 76, 67, 0.9)",
+  //   cardBorder: "rgba(55, 50, 67, 0.6)",
+  //   surfaceBackground: "rgba(87, 76, 67, 0.7)",
+  //   primaryText: "#E5E5E5",
+  //   secondaryText: "#BBBBBB",
+  //   headerText: "#E5E5E5",
+  //   primaryButton: "#574C43",
+  //   primaryButtonText: "#FFFFFF",
+  //   secondaryButton: "rgba(87, 76, 67, 0.3)",
+  //   secondaryButtonText: "#8A7F76",
+  //   tabBarBackground: "rgba(87, 76, 67, 0.95)",
+  //   activeTabColor: "#8A7F76",
+  //   inactiveTabColor: "#999999",
+  //   successColor: "#6B8B6B",
+  //   warningColor: "#8B8B6B",
+  //   errorColor: "#8B6B6B",
+  //   accentColor: "#6B6B6B",
+  //   inputBackground: "rgba(87, 76, 67, 0.8)",
+  //   inputBorder: "rgba(87, 76, 67, 0.4)",
+  //   placeholderText: "#999999",
+  //   progressColor: "#8A7F76",
+  //   completionColor: "#6B8B6B",
+  //   streakColor: "#6B6B6B",
+  // };
   if (hour >= 18 && hour < 24) {
     return {
-      gradientColors: ["#9F8A82", "#514357"],
-      cardBackground: "rgba(81, 67, 87, 0.9)",
+      gradientColors: ["#1E1D21", "#3C3732"],
+      cardBackground: "rgba(0, 0, 0, 0.8)",
       cardBorder: "rgba(159, 138, 130, 0.6)",
       surfaceBackground: "rgba(81, 67, 87, 0.7)",
       primaryText: "#F5F5F5",

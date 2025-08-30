@@ -11,7 +11,8 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: theme.tabBarBackground },
         headerShadowVisible: false,
         tabBarStyle: {
-          backgroundColor: theme.tabBarBackground,
+          // backgroundColor: theme.tabBarBackground,
+          backgroundColor: "transparent",
           borderTopWidth: 0,
           elevation: 0,
           shadowOpacity: 0,
