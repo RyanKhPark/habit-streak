@@ -18,9 +18,10 @@ import { useTimeBasedTheme } from '../hooks/useTimeBasedTheme';
 
 interface AppHeaderProps {
   title: string;
+  dimmed?: boolean;
 }
 
-export function AppHeader({ title }: AppHeaderProps) {
+export function AppHeader({ title, dimmed = false }: AppHeaderProps) {
   const router = useRouter();
   const { user } = useAuth();
   const theme = useTimeBasedTheme();
@@ -62,7 +63,10 @@ export function AppHeader({ title }: AppHeaderProps) {
   });
 
   return (
-    <View style={styles.header}>
+    <View style={[
+      styles.header,
+      dimmed && { opacity: 0.3 }
+    ]}>
       <TouchableOpacity style={styles.notificationButton}>
         <MaterialCommunityIcons name="bell-outline" size={24} color={theme.primaryText} />
         <Badge size={8} style={[styles.notificationBadge, { backgroundColor: theme.errorColor }]} />

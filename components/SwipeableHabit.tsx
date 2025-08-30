@@ -13,6 +13,7 @@ interface SwipeableHabitProps {
   onDelete: (id: string) => void;
   onComplete: (id: string) => void;
   lastCompletion?: HabitCompletion;
+  onFocusChange?: (isFocused: boolean) => void;
 }
 
 export function SwipeableHabit({
@@ -21,6 +22,7 @@ export function SwipeableHabit({
   onDelete,
   onComplete,
   lastCompletion,
+  onFocusChange,
 }: SwipeableHabitProps) {
   const swipeableRef = useRef<Swipeable | null>(null);
   const theme = useTimeBasedTheme();
@@ -65,7 +67,12 @@ export function SwipeableHabit({
         swipeableRef.current?.close();
       }}
     >
-      <HabitCard habit={habit} isCompleted={isCompleted} lastCompletion={lastCompletion} />
+      <HabitCard 
+        habit={habit} 
+        isCompleted={isCompleted} 
+        lastCompletion={lastCompletion} 
+        onFocusChange={onFocusChange}
+      />
     </Swipeable>
   );
 }

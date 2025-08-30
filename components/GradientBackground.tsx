@@ -5,11 +5,14 @@ import { useTimeBasedTheme } from "../hooks/useTimeBasedTheme";
 
 interface GradientBackgroundProps {
   children: React.ReactNode;
+  dimmed?: boolean;
 }
 
-export function GradientBackground({ children }: GradientBackgroundProps) {
+export function GradientBackground({ children, dimmed = false }: GradientBackgroundProps) {
   const theme = useTimeBasedTheme();
-  const colors = theme.gradientColors;
+  const colors = dimmed 
+    ? ['rgba(0,0,0,0.8)', 'rgba(0,0,0,0.9)'] // Dark dimmed colors
+    : theme.gradientColors; // Normal gradient colors
 
   try {
 
