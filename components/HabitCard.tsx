@@ -19,12 +19,14 @@ interface HabitCardProps {
   habit: Habit;
   isCompleted: boolean;
   lastCompletion?: HabitCompletion;
+  onFocusChange?: (isFocused: boolean) => void;
 }
 
 export function HabitCard({
   habit,
   isCompleted,
   lastCompletion,
+  onFocusChange,
 }: HabitCardProps) {
   const router = useRouter();
   const theme = useTimeBasedTheme();
@@ -102,153 +104,158 @@ export function HabitCard({
 
   const handleInputFocus = () => {
     setIsInputFocused(true);
+    onFocusChange?.(true);
   };
 
   const handleInputBlur = () => {
     setIsInputFocused(false);
+    onFocusChange?.(false);
   };
 
   return (
-    <TouchableWithoutFeedback onPress={handleOutsidePress}>
-      <Surface
-        style={[
-          styles.card,
-          {
-            backgroundColor: theme.cardBackground,
-            borderColor: theme.cardBorder,
-          },
-          isCompleted && styles.cardCompleted,
-        ]}
-        elevation={0}
-      >
-        <View style={styles.cardContent}>
-          <Text style={[styles.cardTitle, { color: theme.primaryText }]}>
-            {habit.title}
-          </Text>
+    <>
+      <TouchableWithoutFeedback onPress={handleOutsidePress}>
+        <Surface
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.cardBackground,
+              borderColor: theme.cardBorder,
+            },
+            isCompleted && styles.cardCompleted,
+          ]}
+          elevation={0}
+        >
+          <View style={styles.cardContent}>
+            <Text style={[styles.cardTitle, { color: theme.primaryText }]}>
+              {habit.title}
+            </Text>
 
-          <View style={styles.cardFooter}>
-            <View
-              style={[
-                styles.streakBadge,
-                { backgroundColor: theme.surfaceBackground },
-              ]}
-            >
-              <MaterialCommunityIcons
-                name="fire"
-                size={18}
-                color={theme.streakColor}
-              />
-              <Text style={[styles.streakText, { color: theme.secondaryText }]}>
-                {(habit as any).user_streak_count || 0} day streak
-              </Text>
-            </View>
-            {/* Frequency */}
-            {/* <View
-              style={[
-                styles.frequencyBadge,
-                { backgroundColor: theme.surfaceBackground },
-              ]}
-            >
-              <Text
-                style={[styles.frequencyText, { color: theme.secondaryText }]}
-              >
-                {habit.frequency.charAt(0).toUpperCase() +
-                  habit.frequency.slice(1)}
-              </Text>
-            </View> */}
-            {habit.participant_count && (
+            <View style={styles.cardFooter}>
               <View
                 style={[
-                  styles.participantBadge,
+                  styles.streakBadge,
                   { backgroundColor: theme.surfaceBackground },
                 ]}
               >
                 <MaterialCommunityIcons
-                  name="account-group"
-                  size={16}
-                  color={theme.accentColor}
+                  name="fire"
+                  size={18}
+                  color={theme.streakColor}
                 />
                 <Text
+                  style={[styles.streakText, { color: theme.secondaryText }]}
+                >
+                  {(habit as any).user_streak_count || 0} day streak
+                </Text>
+              </View>
+              {habit.participant_count && (
+                <View
                   style={[
-                    styles.participantText,
-                    { color: theme.secondaryText },
+                    styles.participantBadge,
+                    { backgroundColor: theme.surfaceBackground },
                   ]}
                 >
-                  {habit.participant_count}
+                  <MaterialCommunityIcons
+                    name="account-group"
+                    size={16}
+                    color={theme.accentColor}
+                  />
+                  <Text
+                    style={[
+                      styles.participantText,
+                      { color: theme.secondaryText },
+                    ]}
+                  >
+                    {habit.participant_count}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Input box for habits that require input */}
+            {habit.requires_input === true && (
+              <View
+                style={[
+                  styles.inputContainer,
+                  {
+                    borderColor: isInputFocused
+                      ? theme.primaryText
+                      : `${theme.primaryText}4D`,
+                    borderWidth: 1,
+                    backgroundColor: isInputFocused
+                      ? theme.cardBackground
+                      : "transparent",
+                    zIndex: isInputFocused ? 1000 : 1,
+                    elevation: isInputFocused ? 10 : 0,
+                  },
+                ]}
+              >
+                <TextInput
+                  ref={inputRef}
+                  style={[
+                    styles.input,
+                    {
+                      color: isInputFocused
+                        ? theme.primaryText
+                        : `${theme.primaryText}4D`,
+                    },
+                  ]}
+                  value={inputValue}
+                  onChangeText={setInputValue}
+                  onFocus={handleInputFocus}
+                  onBlur={handleInputBlur}
+                  onSubmitEditing={handleInputSubmit}
+                  placeholder={
+                    lastCompletion
+                      ? `Last: ${formatLastValue(lastCompletion)}`
+                      : "Add your record"
+                  }
+                  placeholderTextColor={
+                    isInputFocused
+                      ? theme.primaryText
+                      : `${theme.primaryText}4D`
+                  }
+                  selectionColor={theme.primaryText}
+                  keyboardType={
+                    habit.unit_type === "number" ? "numeric" : "default"
+                  }
+                  returnKeyType="done"
+                />
+              </View>
+            )}
+
+            {/* Show last recorded value for habits that don't require input or when no input is active */}
+            {habit.requires_input !== true && lastCompletion && (
+              <View
+                style={[
+                  styles.lastRecordContainer,
+                  { backgroundColor: theme.surfaceBackground },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.lastRecordLabel,
+                    { color: theme.successColor },
+                  ]}
+                >
+                  Last record:
+                </Text>
+                <Text
+                  style={[
+                    styles.lastRecordValue,
+                    { color: theme.completionColor },
+                  ]}
+                >
+                  {formatLastValue(lastCompletion)}
                 </Text>
               </View>
             )}
           </View>
+        </Surface>
+      </TouchableWithoutFeedback>
 
-          {/* Input box for habits that require input */}
-          {habit.requires_input === true && (
-            <View
-              style={[
-                styles.inputContainer,
-                {
-                  borderColor: isInputFocused
-                    ? theme.primaryText
-                    : `${theme.primaryText}4D`,
-                },
-              ]}
-            >
-              <TextInput
-                ref={inputRef}
-                style={[
-                  styles.input,
-                  {
-                    color: isInputFocused
-                      ? theme.primaryText
-                      : `${theme.primaryText}CC`, // 80% opacity (CC = 204 in hex)
-                  },
-                ]}
-                value={inputValue}
-                onChangeText={setInputValue}
-                onFocus={handleInputFocus}
-                onBlur={handleInputBlur}
-                onSubmitEditing={handleInputSubmit}
-                placeholder={
-                  lastCompletion
-                    ? `Last: ${formatLastValue(lastCompletion)}`
-                    : "Add your record"
-                }
-                placeholderTextColor={
-                  isInputFocused ? theme.primaryText : `${theme.primaryText}CC` // 80% opacity
-                }
-                keyboardType={
-                  habit.unit_type === "number" ? "numeric" : "default"
-                }
-                returnKeyType="done"
-              />
-            </View>
-          )}
-
-          {/* Show last recorded value for habits that don't require input or when no input is active */}
-          {habit.requires_input !== true && lastCompletion && (
-            <View
-              style={[
-                styles.lastRecordContainer,
-                { backgroundColor: theme.surfaceBackground },
-              ]}
-            >
-              <Text
-                style={[styles.lastRecordLabel, { color: theme.successColor }]}
-              >
-                Last record:
-              </Text>
-              <Text
-                style={[
-                  styles.lastRecordValue,
-                  { color: theme.completionColor },
-                ]}
-              >
-                {formatLastValue(lastCompletion)}
-              </Text>
-            </View>
-          )}
-        </View>
-      </Surface>
-    </TouchableWithoutFeedback>
+    </>
   );
 }
 
@@ -344,5 +351,6 @@ const styles = StyleSheet.create({
     minHeight: 20,
     paddingVertical: 0,
     textAlign: "center",
+    fontFamily: "StyreneB-Regular",
   },
 });

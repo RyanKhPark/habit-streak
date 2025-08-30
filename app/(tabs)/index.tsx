@@ -21,6 +21,7 @@ export default function Index() {
 
   const [recordModalVisible, setRecordModalVisible] = useState(false);
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
+  const [anyInputFocused, setAnyInputFocused] = useState(false);
 
   const { data: habits = [] } = useHabits(user?.$id ?? "");
   const { data: completions = [] } = useTodayCompletions(user?.$id ?? "");
@@ -91,6 +92,10 @@ export default function Index() {
     }
   };
 
+  const handleFocusChange = (isFocused: boolean) => {
+    setAnyInputFocused(isFocused);
+  };
+
   return (
     <GradientBackground>
       <SafeAreaView style={styles.container}>
@@ -103,6 +108,7 @@ export default function Index() {
             completions={completions}
             onDeleteHabit={handleDeleteHabit}
             onCompleteHabit={handleCompleteHabit}
+            onFocusChange={handleFocusChange}
           />
 
           <RecordInputModal
