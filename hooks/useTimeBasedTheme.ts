@@ -49,14 +49,14 @@ const getTimeBasedTheme = (): TimeBasedTheme => {
   // Morning: 6:00-11:59 - Light, warm, energetic colors
   if (hour >= 6 && hour < 12) {
     return {
-      gradientColors: ["#EFE7F3", "#FFDCD4"],
-      cardBackground: "rgba(255, 255, 255, 0.9)",
+      gradientColors: ["#FFF5ED", "#DCD1C8"],
+      cardBackground: "rgba(255, 255, 255, 0.8)",
       cardBorder: "rgba(239, 231, 243, 0.8)",
       surfaceBackground: "rgba(255, 240, 245, 0.7)",
-      primaryText: "#2D2D2D",
+      primaryText: "#3A2B2B",
       secondaryText: "#666666",
       headerText: "#2D2D2D",
-      primaryButton: "#D4A5A5",
+      primaryButton: "#DDD2C8",
       primaryButtonText: "#FFFFFF",
       secondaryButton: "rgba(212, 165, 165, 0.2)",
       secondaryButtonText: "#D4A5A5",

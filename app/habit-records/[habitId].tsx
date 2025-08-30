@@ -13,6 +13,7 @@ import {
   ScrollView,
   StatusBar,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -62,6 +63,11 @@ export default function HabitRecordsScreen() {
   >(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [bannerModalVisible, setBannerModalVisible] = useState(false);
+  const [editingCell, setEditingCell] = useState<{
+    userId: string;
+    date: string;
+  } | null>(null);
+  const [editValue, setEditValue] = useState("");
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -125,7 +131,7 @@ export default function HabitRecordsScreen() {
         COMPLETIONS_COLLECTION_ID,
         [
           Query.equal("habit_id", habitId!),
-          Query.orderDesc("completed_at"),
+          Query.orderDesc("$updatedAt"), // Order by most recently updated
           Query.limit(1000),
         ]
       );
@@ -159,7 +165,15 @@ export default function HabitRecordsScreen() {
         }
 
         const userRecord = userMap.get(completion.user_id)!;
-        userRecord.completions[completionDate] = completion;
+
+        // Only update if this completion is more recent than existing one
+        const existingCompletion = userRecord.completions[completionDate];
+        if (
+          !existingCompletion ||
+          completion.$updatedAt > existingCompletion.$updatedAt
+        ) {
+          userRecord.completions[completionDate] = completion;
+        }
 
         if (completionDate === todayString) {
           userRecord.todayCompletionTime = completion.completed_at;
@@ -216,6 +230,67 @@ export default function HabitRecordsScreen() {
   const handleUserPress = (userData: TableData["users"][0]) => {
     setSelectedUser(userData);
     setModalVisible(true);
+  };
+
+  const handleCellPress = (
+    userId: string,
+    date: string,
+    currentValue: string
+  ) => {
+    const todayString = getTodayString();
+    if (date === todayString && userId === user?.$id) {
+      setEditingCell({ userId, date });
+      setEditValue(currentValue || "");
+    }
+  };
+
+  const handleCellSave = async () => {
+    if (!editingCell || !habitId) return;
+
+    try {
+      const completion = tableData.users.find(
+        (u) => u.user_id === editingCell.userId
+      )?.completions[editingCell.date];
+
+      if (completion) {
+        // Update existing completion
+        await databases.updateDocument(
+          DATABASE_ID,
+          COMPLETIONS_COLLECTION_ID,
+          completion.$id,
+          {
+            value: editValue,
+            display_value: editValue,
+            completed_at: new Date().toISOString(),
+          }
+        );
+      } else {
+        // Create new completion
+        await databases.createDocument(
+          DATABASE_ID,
+          COMPLETIONS_COLLECTION_ID,
+          "unique()",
+          {
+            habit_id: habitId,
+            user_id: editingCell.userId,
+            value: editValue,
+            display_value: editValue,
+            completed_at: new Date().toISOString(),
+          }
+        );
+      }
+
+      setEditingCell(null);
+      setEditValue("");
+      await fetchHabitRecords();
+    } catch (error) {
+      console.error("Error updating completion:", error);
+    }
+  };
+
+  const handleCellCancel = () => {
+    setEditingCell(null);
+    setEditValue("");
   };
 
   const LineChart = ({
@@ -425,12 +500,6 @@ export default function HabitRecordsScreen() {
           >
             <Card.Content>
               <Text
-                variant="headlineSmall"
-                style={[styles.arenaTitle, { color: theme.primaryText }]}
-              >
-                {habit?.title}
-              </Text>
-              <Text
                 variant="bodyMedium"
                 style={[
                   styles.arenaDescription,
@@ -498,8 +567,11 @@ export default function HabitRecordsScreen() {
               >
                 <View
                   style={[
-                    styles.customTable,
                     { minWidth: 150 + tableData.dates.length * 70 },
+                    {
+                      borderRadius: 8,
+                      overflow: "hidden",
+                    },
                   ]}
                 >
                   {/* Custom Table Header */}
@@ -594,9 +666,14 @@ export default function HabitRecordsScreen() {
                           const completion = userData.completions[date];
                           const isToday = date === getTodayString();
                           const hasCompletedToday = isToday && completion;
+                          const isEditing =
+                            editingCell?.userId === userData.user_id &&
+                            editingCell?.date === date;
+                          const canEdit =
+                            isToday && userData.user_id === user?.$id;
 
                           return (
-                            <View
+                            <TouchableOpacity
                               key={`${userData.user_id}-${date}`}
                               style={[
                                 styles.customCell,
@@ -605,22 +682,68 @@ export default function HabitRecordsScreen() {
                                   backgroundColor: theme.accentColor,
                                 },
                               ]}
+                              onPress={() => {
+                                const currentValue =
+                                  completion?.value ||
+                                  completion?.display_value ||
+                                  "";
+                                handleCellPress(
+                                  userData.user_id,
+                                  date,
+                                  currentValue
+                                );
+                              }}
+                              disabled={!canEdit}
                             >
                               <View style={styles.cellContainer}>
-                                <Text
-                                  variant="bodySmall"
-                                  style={[
-                                    styles.cellValue,
-                                    {
-                                      color: isToday
-                                        ? theme.primaryButtonText
-                                        : theme.primaryText,
-                                    },
-                                  ]}
-                                >
-                                  {formatValue(completion) || "-"}
-                                </Text>
-                                {hasCompletedToday && (
+                                {isEditing ? (
+                                  <View style={styles.editContainer}>
+                                    <TextInput
+                                      key={`edit-${editingCell?.userId}-${editingCell?.date}`}
+                                      style={[
+                                        styles.editInput,
+                                        {
+                                          color: theme.primaryButtonText,
+                                          borderColor: theme.primaryButtonText,
+                                          backgroundColor:
+                                            "rgba(255,255,255,0.1)",
+                                        },
+                                      ]}
+                                      value={editValue}
+                                      onChangeText={setEditValue}
+                                      onSubmitEditing={handleCellSave}
+                                      onBlur={handleCellCancel}
+                                      autoFocus
+                                      keyboardType={
+                                        habit?.unit_type === "number"
+                                          ? "numeric"
+                                          : "default"
+                                      }
+                                      placeholder="Enter value"
+                                      placeholderTextColor={
+                                        theme.primaryButtonText
+                                      }
+                                    />
+                                  </View>
+                                ) : (
+                                  <View style={styles.textContainer}>
+                                    <Text
+                                      variant="bodySmall"
+                                      style={[
+                                        styles.cellValue,
+                                        {
+                                          color: isToday
+                                            ? theme.primaryButtonText
+                                            : theme.primaryText,
+                                        },
+                                      ]}
+                                    >
+                                      {formatValue(completion) ||
+                                        (canEdit ? "Tap to edit" : "-")}
+                                    </Text>
+                                  </View>
+                                )}
+                                {hasCompletedToday && !isEditing && (
                                   <View
                                     style={[
                                       styles.todayDot,
@@ -629,7 +752,7 @@ export default function HabitRecordsScreen() {
                                   />
                                 )}
                               </View>
-                            </View>
+                            </TouchableOpacity>
                           );
                         })}
                       </View>
@@ -937,9 +1060,6 @@ const styles = StyleSheet.create({
     margin: 16,
     marginTop: 8,
   },
-  customTable: {
-    borderRadius: 8,
-  },
   customTableHeader: {
     flexDirection: "row",
     borderBottomWidth: 2,
@@ -983,7 +1103,7 @@ const styles = StyleSheet.create({
   userCell: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 4,
+    paddingVertical: 2,
   },
   smallAvatar: {
     marginRight: 8,
@@ -997,8 +1117,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
-    minHeight: 40,
-    paddingVertical: 8,
+    minHeight: 36,
+    paddingVertical: 2,
   },
   cellValue: {
     textAlign: "center",
@@ -1011,6 +1131,28 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  editContainer: {
+    width: "100%",
+    alignItems: "center",
+  },
+  editInput: {
+    width: 50,
+    height: 30,
+    borderWidth: 1,
+    borderRadius: 4,
+    textAlign: "center",
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  textContainer: {
+    width: 50,
+    height: 30,
+    borderWidth: 1,
+    borderRadius: 4,
+    borderColor: "transparent",
+    justifyContent: "center",
+    alignItems: "center",
   },
   modalBackdrop: {
     flex: 1,
